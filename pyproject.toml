@@ -1,0 +1,38 @@
+[project]
+name = "dl4h-reproduce-keyclass"
+version = "0.1.0"
+description = "Reproducibility attempt of the Keyclass Paper for UIUC DL4H Spring 2025"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "nltk>=3.9.1",
+    "numpy>=2.2.4",
+    "pandas>=2.2.3",
+    "scikit-learn>=1.6.1",
+    "sentence-transformers>=4.0.2",
+    "slycot>=0.6.0",
+    "snorkel>=0.10.0",
+    "tokenizers>=0.21.1",
+    "torch>=2.6.0",
+    "torchaudio>=2.6.0",
+    "torchvision>=0.21.0",
+    "tqdm>=4.67.1",
+    "transformers>=4.51.0",
+    "wandb>=0.19.9",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+  { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchaudio = [
+  { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
