@@ -2,7 +2,7 @@ activation: torch.nn.LeakyReLU()
 average: weighted
 base_encoder: paraphrase-mpnet-base-v2
 criterion: torch.nn.CrossEntropyLoss(reduction='none')
-data_path: /zfsauton/project/public/chufang/classes/
+data_path: ../original_data/
 dataset: amazon
 device: cuda
 end_model_batch_size: 32
@@ -18,6 +18,7 @@ h_sizes:
 label_model: data_programming
 label_model_lr: 0.01
 label_model_n_epochs: 100
+log_file: ../logs/config_amazon_original.log
 max_num: 140000
 min_df: 0.005
 model_path: ../models/amazon/
