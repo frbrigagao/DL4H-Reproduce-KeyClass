@@ -1,8 +1,13 @@
 import os
 import boto3
+from botocore.config import Config
 from botocore.exceptions import NoCredentialsError, ClientError
 from tqdm import tqdm
 from zipfile import ZipFile
+
+# Set boto3 headers 
+os.environ['AWS_REQUEST_CHECKSUM_CALCULATION'] = 'when_required'
+os.environ['AWS_RESPONSE_CHECKSUM_VALIDATION'] = 'when_required'
 
 # Replace these with your Backblaze B2 credentials
 KEY_ID = '00366006aa4022e000000000a'
@@ -10,25 +15,31 @@ APPLICATION_KEY = 'K003yFGks8sxQ0VcMVSIzmJOYB5tCd0'
 BUCKET_NAME = 'cs598-dl4h-project'
 ENDPOINT_URL = 'https://s3.eu-central-003.backblazeb2.com'  # Adjust if using a different region
 
-# Initialize the S3 client for Backblaze B2
+# Initialize the S3 client for Backblaze B2 with custom configuration
+config = Config(
+    s3={'addressing_style': 'virtual'},
+    signature_version='s3v4',
+    retries={'max_attempts': 10, 'mode': 'standard'}
+)
 s3 = boto3.client(
     service_name='s3',
     endpoint_url=ENDPOINT_URL,
     aws_access_key_id=KEY_ID,
-    aws_secret_access_key=APPLICATION_KEY
+    aws_secret_access_key=APPLICATION_KEY,
+    config=config
 )
 
 # List of files to download (file_key, subfolder_name)
 files_to_download = [
-    ('agnews_data.zip', 'datasets/agnews'),
-    ('imdb_data.zip', 'datasets/imdb'),
-    ('dbpedia_data.zip', 'datasets/dbpedia'),
-    ('amazon_data.zip', 'datasets/amazon'),
-    ('models_agnews_v1.0.zip', 'models'),
-    ('models_dbpedia_v1.0.zip', 'models'),
-    ('models_imdb_v.10.zip', 'models'),
-    ('models_amazon_v1.0.zip', 'models'),
-    ('results_v1.0.zip', 'results')
+    ('agnews_data.zip', 'original_data/agnews'),
+    ('imdb_data.zip', 'original_data/imdb'),
+    ('dbpedia_data.zip', 'original_data/dbpedia'),
+    ('amazon_data.zip', 'original_data/amazon'),
+    ('models_agnews_v1.0.zip', 'pretrained_models/agnews/original'),
+    ('models_dbpedia_v1.0.zip', 'pretrained_models/dbpedia/original'),
+    ('models_imdb_v.10.zip', 'pretrained_models/imdb/original'),
+    ('models_amazon_v1.0.zip', 'pretrained_models/amazon/original'),
+    ('results_v1.0.zip', 'results/original')
     # Add more files and their respective subfolders as needed
 ]
 
@@ -68,7 +79,7 @@ def extract_zip(file_path, extract_to):
 
 if __name__ == "__main__":
     # Determine the path to the 'original_datasets' directory (one level up from the script's directory)
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'original_data'))
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
     for file_key, subfolder_name in files_to_download:
         user_input = input(f"Do you want to download and extract '{file_key}' to '{base_dir}/{subfolder_name}'? (yes/no): ").strip().lower()

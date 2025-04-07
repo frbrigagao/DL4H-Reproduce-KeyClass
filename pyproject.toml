@@ -5,6 +5,7 @@ description = "Reproducibility attempt of the Keyclass Paper for UIUC DL4H Sprin
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "boto3>=1.37.28",
     "nltk>=3.9.1",
     "numpy>=2.2.4",
     "pandas>=2.2.3",

@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 mimic_preprocessing/data/
+original_data/
+pretrained_models/
+results/
