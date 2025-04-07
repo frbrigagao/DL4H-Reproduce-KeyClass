@@ -32,7 +32,56 @@ from datetime import datetime
 import torch
 from yaml import load, dump
 from yaml import CLoader as Loader, CDumper as Dumper
+import logging
+import sys
+import os
 
+def setup_logging(log_file=None):
+    """Set up logging to file and console
+    
+    Parameters
+    ----------
+    log_file : str
+        Path to log file. If None, logging to file is disabled.
+    """
+    # Create logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    
+    # Remove any existing handlers to avoid duplicates
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+    
+    # Create formatter
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    
+    # Create console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    
+    # Create file handler if log_file is provided
+    if log_file:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        file_handler = logging.FileHandler(log_file, mode='a')
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+        logging.info(f"Logging to {log_file}")
+    
+    # Replace print with logging.info
+    def print_to_log(*args, **kwargs):
+        text = " ".join(map(str, args))
+        if 'end' in kwargs:
+            text += kwargs['end']
+        else:
+            text += '\n'
+        logging.info(text.rstrip())
+    
+    # Replace the built-in print with our custom function
+    __builtins__['print'] = print_to_log
+    
+    return logger
 
 def log(metrics: Union[List, Dict], filename: str, results_dir: str,
         split: str):
@@ -76,7 +125,8 @@ def log(metrics: Union[List, Dict], filename: str, results_dir: str,
 
 def compute_metrics(y_preds: np.array,
                     y_true: np.array,
-                    average: str = 'weighted'):
+                    average: str = 'weighted',
+                    verbose: bool = False):
     """Compute accuracy, recall and precision
 
         Parameters
@@ -92,18 +142,30 @@ def compute_metrics(y_preds: np.array,
             the scores for each class are returned. Otherwise, this determines the 
             type of averaging performed on the data.
     """
-    return [
-        np.mean(y_preds == y_true),
-        precision_score(y_true, y_preds, average=average),
-        recall_score(y_true, y_preds, average=average)
-    ]
+
+    accuracy = np.mean(y_preds == y_true)
+    precision = precision_score(y_true, y_preds, average=average)
+    recall = recall_score(y_true, y_preds, average=average)
+    #f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+    
+    # Add optional verbose printing without changing return values
+    if verbose:
+        print("\n===== Metrics =====")
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+    #    print(f"F1 Score: {f1:.4f}")
+    
+    # Return original format as expected by existing code
+    return [accuracy, precision, recall]
 
 
 def compute_metrics_bootstrap(y_preds: np.array,
                               y_true: np.array,
                               average: str = 'weighted',
                               n_bootstrap: int = 100,
-                              n_jobs: int = 10):
+                              n_jobs: int = 10,
+                              verbose: bool = True):
     """Compute bootstrapped confidence intervals (CIs) around metrics of interest. 
 
         Parameters
@@ -124,6 +186,9 @@ def compute_metrics_bootstrap(y_preds: np.array,
 
         n_jobs: int
             Number of jobs to run in parallel. 
+
+        verbose: bool
+            If True, print the metrics with names, means, and standard deviations
     """
     output_ =  joblib.Parallel(n_jobs=n_jobs, verbose=1)(
                                 joblib.delayed(compute_metrics)
@@ -133,6 +198,13 @@ def compute_metrics_bootstrap(y_preds: np.array,
     output_ = np.array(output_)
     means = np.mean(output_, axis=0)
     stds = np.std(output_, axis=0)
+
+    if verbose:
+        print("\n===== Bootstrap Metrics =====")
+        print(f"Accuracy: {means[0]:.4f} ± {stds[0]:.4f}")
+        print(f"Precision: {means[1]:.4f} ± {stds[1]:.4f}")
+        print(f"Recall: {means[2]:.4f} ± {stds[2]:.4f}")
+
     return np.stack([means, stds], axis=1)
 
 
@@ -277,6 +349,11 @@ class Parser:
                 print(
                     f'Setting the value of {key} to {self.default_config[key]}!'
                 )
+
+        # Ensure log_file has a default value if not provided
+        if 'log_file' not in self.config:
+            self.config['log_file'] = None
+            print("No log file specified. Logging to console only.")
 
         target_present = False
         for key in self.config.keys():
