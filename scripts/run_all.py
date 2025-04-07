@@ -23,6 +23,9 @@
 
 import argparse
 import label_data, encode_datasets, train_downstream_model
+import sys
+sys.path.append('../keyclass/')
+import utils
 
 if __name__ == "__main__":
     parser_cmd = argparse.ArgumentParser()
@@ -34,6 +37,11 @@ if __name__ == "__main__":
                             type=int,
                             help="Random Seed")
     args_cmd = parser_cmd.parse_args()
+
+    args = utils.Parser(config_file_path=args_cmd.config).parse()
+
+    # Set up logging
+    logger = utils.setup_logging(args['log_file'])
 
     print("Encoding Dataset")
     encode_datasets.run(args_cmd)
