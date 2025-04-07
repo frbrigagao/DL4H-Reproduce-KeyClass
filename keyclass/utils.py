@@ -64,6 +64,12 @@ def setup_logging(log_file=None):
     if log_file:
         # Ensure directory exists
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
+
+        log_trailer = '-' + datetime.now().strftime("%d-%m-%Y-%H-%M-%S") + '.log'
+        
+        # Add date and time to filename (for multiple runs)
+        log_file = log_file.replace('.log', log_trailer)
+
         file_handler = logging.FileHandler(log_file, mode='a')
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
@@ -115,7 +121,7 @@ def log(metrics: Union[List, Dict], filename: str, results_dir: str,
 
     filename_complete = join(
         results_dir,
-        f'{split}_{filename}_{datetime.now().strftime("%d-%b-%Y-%H_%M_%S")}.txt'
+        f'{split}_{filename}_{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}.txt'
     )
     print(f'Saving results in {filename_complete}...')
 
