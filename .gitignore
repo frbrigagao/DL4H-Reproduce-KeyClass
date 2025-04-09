@@ -12,3 +12,5 @@ mimic_preprocessing/data/
 original_data/
 pretrained_models/
 results/
+scripts/wandb
+logs/
