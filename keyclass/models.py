@@ -47,7 +47,8 @@ class CustomEncoder(torch.nn.Module):
     def __init__(self,
                  pretrained_model_name_or_path:
                  str = 'bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12',
-                 device: str = "cuda"):
+                 device: str = "cuda",
+                 ):
         super(CustomEncoder, self).__init__()
         """Custom encoder class
 
@@ -153,19 +154,14 @@ class CustomEncoder(torch.nn.Module):
                                       padding=True)
             features = features.to(self.device)
             out_features = self.model.forward(**features)
-            embeddings = utils.mean_pooling(out_features,
-                                            features['attention_mask'])
+            embeddings = utils.mean_pooling(out_features, features['attention_mask'])
 
             if normalize_embeddings:
-                embeddings = torch.nn.functional.normalize(embeddings,
-                                                           p=2,
-                                                           dim=1)
+                embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
             all_embeddings.extend(embeddings)
 
-        all_embeddings = [
-            all_embeddings[idx] for idx in np.argsort(length_sorted_idx)
-        ]
+        all_embeddings = [all_embeddings[idx] for idx in np.argsort(length_sorted_idx)]
         all_embeddings = torch.stack(all_embeddings)  # Converts to tensor
 
         return all_embeddings
@@ -189,8 +185,7 @@ class Encoder(torch.nn.Module):
         super(Encoder, self).__init__()
 
         self.model_name = model_name
-        self.model = SentenceTransformer(model_name_or_path=model_name,
-                                         device=device)
+        self.model = SentenceTransformer(model_name_or_path=model_name, device=device)
         self.device = device
 
         self.to(device)
@@ -199,7 +194,9 @@ class Encoder(torch.nn.Module):
                sentences: Union[str, List[str]],
                batch_size: int = 32,
                show_progress_bar: Optional[bool] = False,
-               normalize_embeddings: bool = False):
+               normalize_embeddings: bool = False,
+               use_wandb: bool = False,
+               run: object = None):
         """
         Computes sentence embeddings using the forward function
 
@@ -226,7 +223,6 @@ class Encoder(torch.nn.Module):
                 normalize_embeddings: bool = False):
         """
         Computes sentence embeddings
-
         
         Parameters
         ---------- 
@@ -244,8 +240,7 @@ class Encoder(torch.nn.Module):
 
         all_embeddings = []
 
-        length_sorted_idx = np.argsort(
-            [-utils._text_length(sen) for sen in sentences])
+        length_sorted_idx = np.argsort([-utils._text_length(sen) for sen in sentences])
         # length_sorted_idx = np.argsort([-self.model._text_length(sen) for sen in sentences])
 
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
@@ -258,22 +253,17 @@ class Encoder(torch.nn.Module):
             sentences_batch = sentences_sorted[start_index:start_index +
                                                batch_size]
             features = self.model.tokenize(sentences_batch)
-            features = sentence_transformers.util.batch_to_device(
-                features, self.device)
+            features = sentence_transformers.util.batch_to_device(features, self.device)
 
             out_features = self.model.forward(features)
 
             embeddings = out_features['sentence_embedding']
             if normalize_embeddings:
-                embeddings = torch.nn.functional.normalize(embeddings,
-                                                           p=2,
-                                                           dim=1)
+                embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
             all_embeddings.extend(embeddings)
 
-        all_embeddings = [
-            all_embeddings[idx] for idx in np.argsort(length_sorted_idx)
-        ]
+        all_embeddings = [all_embeddings[idx] for idx in np.argsort(length_sorted_idx)]
         all_embeddings = torch.stack(all_embeddings)  # Converts to tensor
 
         return all_embeddings
@@ -289,7 +279,6 @@ class FeedForwardFlexible(torch.nn.Module):
         super(FeedForwardFlexible, self).__init__()
         """
         Flexible feed forward network over a base encoder. 
-
         
         Parameters
         ---------- 
@@ -375,9 +364,7 @@ class LabelModelWrapper:
 
         _VALID_LABEL_MODELS = ['data_programming', 'majority_vote']
         if model_name not in _VALID_LABEL_MODELS:
-            raise ValueError(
-                f'model_name must be one of {_VALID_LABEL_MODELS} but passed {model_name}.'
-            )
+            raise ValueError(f'model_name must be one of {_VALID_LABEL_MODELS} but passed {model_name}.')
 
         self.label_matrix = label_matrix.to_numpy()
         self.y_train = y_train
@@ -421,12 +408,16 @@ class LabelModelWrapper:
             seed: int
                 A random seed to initialize the random number generator with
         """
-        print(f'==== Training the label model ====')
+
+        print(f'==== Training the label model ({self.model_name})====')
+        
         if self.model_name == 'data_programming':
+
             self.label_model = LabelModel(cardinality=self.n_classes,
                                           device=self.device)
             if cuda == True:
                 self.label_model = self.label_model.cuda()
+
             self.label_model.fit(self.label_matrix,
                                  n_epochs=n_epochs,
                                  class_balance=class_balance,
@@ -436,6 +427,7 @@ class LabelModelWrapper:
                                  optimizer='sgd')
             self.trained = True
             self.learned_weights = self.label_model.get_weights()
+
         elif self.model_name == 'majority_vote':
             self.label_model = MajorityLabelVoter(cardinality=self.n_classes)
             self.trained = True
@@ -444,8 +436,7 @@ class LabelModelWrapper:
         """Predict probabilistic labels P(Y | lambda)
         """
         if not self.trained:
-            print(
-                "Model must be trained before predicting probabilistic labels")
+            print("Model must be trained before predicting probabilistic labels")
             return
 
         y_proba = pd.DataFrame(

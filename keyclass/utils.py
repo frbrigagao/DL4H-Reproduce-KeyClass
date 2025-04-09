@@ -36,7 +36,7 @@ import logging
 import sys
 import os
 
-def setup_logging(log_file=None):
+def setup_logging(log_file= None):
     """Set up logging to file and console
     
     Parameters
@@ -65,15 +65,10 @@ def setup_logging(log_file=None):
         # Ensure directory exists
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
-        log_trailer = '-' + datetime.now().strftime("%d-%m-%Y-%H-%M-%S") + '.log'
-        
-        # Add date and time to filename (for multiple runs)
-        log_file = log_file.replace('.log', log_trailer)
-
         file_handler = logging.FileHandler(log_file, mode='a')
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
-        logging.info(f"Logging to {log_file}")
+        logging.info(f"Log location: {log_file}")
     
     # Replace print with logging.info
     def print_to_log(*args, **kwargs):
@@ -84,13 +79,12 @@ def setup_logging(log_file=None):
             text += '\n'
         logging.info(text.rstrip())
     
-    # Replace the built-in print with our custom function
+    # Replace the built-in print with a custom function
     __builtins__['print'] = print_to_log
     
     return logger
 
-def log(metrics: Union[List, Dict], filename: str, results_dir: str,
-        split: str):
+def log(metrics: Union[List, Dict], filename: str, results_dir: str, split: str):
     """Logging function
         
         Parameters
@@ -119,10 +113,11 @@ def log(metrics: Union[List, Dict], filename: str, results_dir: str,
     else:
         results = metrics
 
-    filename_complete = join(
-        results_dir,
-        f'{split}_{filename}_{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}.txt'
-    )
+    # Create directory if it doesn´t exist
+    if not os.path.exists(results_dir): os.makedirs(results_dir)
+
+    filename_complete = join(results_dir, f'{split}_{filename}.txt')
+
     print(f'Saving results in {filename_complete}...')
 
     with open(filename_complete, 'w', encoding='utf-8') as f:
@@ -171,7 +166,10 @@ def compute_metrics_bootstrap(y_preds: np.array,
                               average: str = 'weighted',
                               n_bootstrap: int = 100,
                               n_jobs: int = 10,
-                              verbose: bool = True):
+                              verbose: bool = True,
+                              model_name: str = '',
+                              use_wandb: bool = False,
+                              run: object = None):
     """Compute bootstrapped confidence intervals (CIs) around metrics of interest. 
 
         Parameters
@@ -195,6 +193,15 @@ def compute_metrics_bootstrap(y_preds: np.array,
 
         verbose: bool
             If True, print the metrics with names, means, and standard deviations
+
+        model_name: str 
+            The name of the model being logged (eg: end_model, self_trained_end_model)
+
+        use_wandb: bool
+            True if Weights & Biases logging is enabled for the run
+
+        run: object
+            Weights & Biases logging object
     """
     output_ =  joblib.Parallel(n_jobs=n_jobs, verbose=1)(
                                 joblib.delayed(compute_metrics)
@@ -206,10 +213,21 @@ def compute_metrics_bootstrap(y_preds: np.array,
     stds = np.std(output_, axis=0)
 
     if verbose:
-        print("\n===== Bootstrap Metrics =====")
+        print(f"\n===== Bootstrap Metrics for {model_name} =====")
         print(f"Accuracy: {means[0]:.4f} ± {stds[0]:.4f}")
         print(f"Precision: {means[1]:.4f} ± {stds[1]:.4f}")
         print(f"Recall: {means[2]:.4f} ± {stds[2]:.4f}")
+
+    # Log to Weights & Biases (if set)
+    if use_wandb:
+        run.log({
+            f"{model_name}/accuracy": means[0],
+            f"{model_name}/accuracy_std": stds[0],
+            f"{model_name}/precision": means[1],
+            f"{model_name}/precision_std": stds[1],
+            f"{model_name}/recall": means[2],
+            f"{model_name}/recall_std": means[2],
+        })
 
     return np.stack([means, stds], axis=1)
 
@@ -229,23 +247,17 @@ def get_balanced_data_mask(proba_preds: np.array,
     if class_balance is None:  # Assume all classes are equally likely
         class_balance = np.ones(proba_preds.shape[1]) / proba_preds.shape[1]
 
-    assert np.sum(
-        class_balance
-    ) - 1 < 1e-3, "Class balance must be a probability, and hence sum to 1"
-    assert len(class_balance) == proba_preds.shape[
-        1], f"Only {proba_preds.shape[1]} classes in the data"
+    assert np.sum(class_balance) - 1 < 1e-3, "Class balance must be a probability, and hence sum to 1"
+    assert len(class_balance) == proba_preds.shape[1], f"Only {proba_preds.shape[1]} classes in the data"
 
     # Get integer of max number of elements per class
     class_max_inds = [int(max_num * c) for c in class_balance]
     train_idxs = np.array([], dtype=int)
 
     for i in range(proba_preds.shape[1]):
-        sorted_idxs = np.argsort(
-            proba_preds[:, i])[::-1]  # gets highest probas for class
+        sorted_idxs = np.argsort(proba_preds[:, i])[::-1]  # gets highest probas for class
         sorted_idxs = sorted_idxs[:class_max_inds[i]]
-        print(
-            f'Confidence of least confident data point of class {i}: {proba_preds[sorted_idxs[-1], i]}'
-        )
+        print(f'Confidence of least confident data point of class {i}: {proba_preds[sorted_idxs[-1], i]}')
         train_idxs = np.union1d(train_idxs, sorted_idxs)
 
     mask = np.zeros(len(proba_preds), dtype=bool)
@@ -290,20 +302,18 @@ def fetch_data(dataset='imdb', path='~/', split='train'):
     #    raise ValueError(f'split must be one of \'train\' or \'test\', but received {split}.')
 
     if not exists(f"{join(path, dataset, split)}.txt"):
-        raise ValueError(
-            f'File {split}.txt does not exists in {join(path, dataset)}')
+        raise ValueError(f'File {split}.txt does not exists in {join(path, dataset)}')
 
     text = open(f'{join(path, dataset, split)}.txt').readlines()
 
     if dataset == 'mimic':
-        text = [cleantext(line) for line in text]
+        text = [clean_text(line) for line in text]
 
     return text
 
 
 def mean_pooling(model_output, attention_mask):
-    token_embeddings = model_output[
-        0]  #First element of model_output contains all token embeddings
+    token_embeddings = model_output[0]  #First element of model_output contains all token embeddings
     input_mask_expanded = attention_mask.unsqueeze(-1).expand(
         token_embeddings.size()).float()
 
@@ -324,12 +334,10 @@ def _text_length(text: Union[List[int], List[List[int]]]):
         return len(next(iter(text.values())))
     elif not hasattr(text, '__len__'):  #Object has no len() method
         return 1
-    elif len(text) == 0 or isinstance(text[0],
-                                      int):  #Empty string or list of ints
+    elif len(text) == 0 or isinstance(text[0], int):  #Empty string or list of ints
         return len(text)
     else:
-        return sum([len(t)
-                    for t in text])  #Sum of length of individual strings
+        return sum([len(t) for t in text])  #Sum of length of individual strings
 
 
 class Parser:
@@ -352,9 +360,7 @@ class Parser:
             if ('target' not in key) and ((key not in list(self.config.keys()))
                                           or (self.config[key] is None)):
                 self.config[key] = self.default_config[key]
-                print(
-                    f'Setting the value of {key} to {self.default_config[key]}!'
-                )
+                print(f'Setting the value of {key} to {self.default_config[key]}!')
 
         # Ensure log_file has a default value if not provided
         if 'log_file' not in self.config:
@@ -366,7 +372,8 @@ class Parser:
             if 'target' in key:
                 target_present = True
                 break
-        if not target_present: raise ValueError("Target must be present.")
+        if not target_present: 
+            raise ValueError("Target must be present.")
         self.save_config()
         return self.config
 

@@ -59,7 +59,9 @@ def train(model: torch.nn.Module,
           raw_text: bool = False,
           lr: float = 1e-3,
           weight_decay: float = 1e-4,
-          patience: int = 2):
+          patience: int = 2,
+          use_wandb: bool = False,
+          run: object = None):
     """Function to train the encoder along with fully connected layers. 
 
     Parameters
@@ -76,6 +78,8 @@ def train(model: torch.nn.Module,
     lr: Learning Rate
     weight_decay: Weight decay parameter (for regularization/to prevent overfitting) 
     patience: Number of consecutive epochs of no performance improvement before terminating training (for early stopping)
+    use_wandb: True if Weights & Biases is set up to log the training run
+    run: the Weights & Biases run object
     """
     if isinstance(y_train, np.ndarray):
         y_train = torch.from_numpy(y_train)
@@ -84,8 +88,7 @@ def train(model: torch.nn.Module,
         X_train = torch.from_numpy(X_train)
 
     if sample_weights is not None:
-        sample_weights = torch.from_numpy(sample_weights.reshape(
-            -1, 1)).to(device).float()
+        sample_weights = torch.from_numpy(sample_weights.reshape(-1, 1)).to(device).float()
 
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=lr,
@@ -100,6 +103,7 @@ def train(model: torch.nn.Module,
 
     N = len(X_train)
     pbar = trange(epochs, unit="batch")
+
     for nep in pbar:
         pbar.set_description(f"Epoch {nep}")
         permutation = torch.randperm(N)
@@ -111,6 +115,7 @@ def train(model: torch.nn.Module,
 
             batch_x, batch_y = X_train[indices], y_train[indices]
             batch_y = batch_y.to(device)
+
             # Since raw text is a list of strings, it cannot be trivially moved to the GPU using the
             # .to() method. The base encoder model takes care of this.
             if raw_text == False: batch_x = batch_x.to(device)
@@ -127,15 +132,25 @@ def train(model: torch.nn.Module,
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-            running_loss = running_loss + (loss.cpu().detach().numpy() *
-                                           batch_size / N)
+            running_loss = running_loss + (loss.cpu().detach().numpy() * batch_size / N)
 
         scheduler.step()
 
         with torch.no_grad():  # Early stopping
+
             pbar.set_postfix(tolerance_count=tolcount,
                              running_loss=running_loss,
                              best_loss=best_loss)
+            
+            # Log training to Weights & Balances (if set)
+            if use_wandb:
+                run.log({
+                    "end_model/epoch": nep,
+                    "end_model/tolerance_count": tolcount,
+                    "end_model/running_loss": running_loss,
+                    "end_model/best_loss": best_loss
+                })
+
             if running_loss <= best_loss:
                 best_loss = running_loss
                 tolcount = 0
@@ -163,7 +178,9 @@ def self_train(model: torch.nn.Module,
                q_update_interval: int = 50,
                patience: int = 3,
                self_train_thresh: float = 1 - 2e-3,
-               print_eval: bool = True):
+               print_eval: bool = True,
+               use_wandb: bool = False,
+               run: object = None):
     """Function to self train a model.
 
     Parameters
@@ -180,6 +197,8 @@ def self_train(model: torch.nn.Module,
     patience: Number of consecutive epochs of no performance improvement before terminating training (for early stopping) for self training
     self_train_thresh: If p matches q at a rate above this threshold for "patience" number of epochs, then self training will stop early (if predictions p are not flipping, stop early)
     print_eval: Boolean - prints validation metrics if True, and does not if False
+    use_wandb: True if Weights & Biases is set up to log the training run
+    run: the Weights & Biases run object
     """
     model.train()
     model.zero_grad()
@@ -196,8 +215,7 @@ def self_train(model: torch.nn.Module,
     N = len(X_train)
     permutation = torch.randperm(N)
 
-    X_train = np.array(
-        X_train)  # Ensures that we are able to index into X_train
+    X_train = np.array(X_train)  # Ensures that we are able to index into X_train
 
     pbar = trange(N // (batch_size * q_update_interval), unit="batch")
     for epoch in pbar:
@@ -208,25 +226,22 @@ def self_train(model: torch.nn.Module,
             pred_proba = model.predict_proba(X_train[inds],
                                              batch_size=batch_size,
                                              raw_text=True)
-            target_dist = get_q_soft(
-                pred_proba)  # should be of size (N, num_categories)
+            target_dist = get_q_soft(pred_proba)  # should be of size (N, num_categories)
             target_preds = np.argmax(target_dist, axis=1)
 
-            self_train_agreement = np.mean(
-                np.argmax(pred_proba, axis=1) == target_preds)
+            self_train_agreement = np.mean(np.argmax(pred_proba, axis=1) == target_preds)
 
-            if self_train_agreement > self_train_thresh: tolcount += 1
-            else: tolcount = 0
+            if self_train_agreement > self_train_thresh: 
+                tolcount += 1
+            else: 
+                tolcount = 0
 
             if tolcount >= patience:
                 break
 
         for i in range(0, batch_size * q_update_interval, batch_size):
-            batch_x = X_train[inds][
-                i:i +
-                batch_size]  # The training data is moved to device by the encoder model in its forward function
-            batch_q = torch.from_numpy(target_dist[i:i +
-                                                   batch_size]).to(device)
+            batch_x = X_train[inds][i:i + batch_size]  # The training data is moved to device by the encoder model in its forward function
+            batch_q = torch.from_numpy(target_dist[i:i + batch_size]).to(device)
 
             out = model.forward(batch_x, mode='self_train', raw_text=True)
             loss = criterion(out, batch_q)
@@ -241,8 +256,19 @@ def self_train(model: torch.nn.Module,
             val_preds = model.predict(X_val)
             # print('tolcount', tolcount, 'self_train_agreement', self_train_agreement, 'validation_accuracy', np.mean(val_preds==y_val))
 
+        validation_accuracy = np.mean(val_preds == y_val)
+
         pbar.set_postfix(tolerance_count=tolcount,
                          self_train_agreement=self_train_agreement,
-                         validation_accuracy=np.mean(
-                             val_preds == y_val) if print_eval else None)
+                         validation_accuracy=validation_accuracy if print_eval else None)        
+
+        # Log training to Weights & Balances (if set)
+        if use_wandb:
+            run.log({
+                "self_trained_end_model/epoch": epoch,
+                "self_trained_end_model/tolerance_count": tolcount,
+                "self_trained_end_model/self_train_agreement": self_train_agreement,
+                "self_trained_end_model/validation_accuracy": validation_accuracy
+            })
+
     return model

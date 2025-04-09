@@ -36,10 +36,14 @@ import os
 from os.path import join, exists
 
 
-def run(args_cmd):
+def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
 
     args = utils.Parser(config_file_path=args_cmd.config).parse()
     print(args)
+
+    final_preds_path = args['preds_path'] + experiment_name + '/predictions'
+    final_results_path = args['results_path'] + experiment_name + '/metrics'
+    final_embeddings_path = args['results_path'] + experiment_name + '/data_embeddings'
 
     # Load training data
     train_text = utils.fetch_data(dataset=args['dataset'],
@@ -58,8 +62,7 @@ def run(args_cmd):
         training_labels_present = False
         print('No training labels found!')
 
-    with open(join(args['data_path'], args['dataset'], 'train_embeddings.pkl'),
-              'rb') as f:
+    with open(join(final_embeddings_path, 'train_embeddings.pkl'), 'rb') as f:
         X_train = pickle.load(f)
 
     # Print dataset statistics
@@ -78,6 +81,7 @@ def run(args_cmd):
         base_encoder=args['base_encoder'],
         device=torch.device(args['device']),
         label_model=args['label_model'])
+    
     proba_preds = labeler.get_labels(
         text_corpus=train_text,
         label_names=label_names,
@@ -93,25 +97,32 @@ def run(args_cmd):
     y_train_pred = np.argmax(proba_preds, axis=1)
 
     # Save the predictions
-    if not os.path.exists(args['preds_path']): os.makedirs(args['preds_path'])
-    with open(
-            join(args['preds_path'], f"{args['label_model']}_proba_preds.pkl"),
-            'wb') as f:
+    if not os.path.exists(final_preds_path): os.makedirs(final_preds_path), 
+    with open(join(final_preds_path, f"{args['label_model']}_proba_preds.pkl"), 'wb') as f:
         pickle.dump(proba_preds, f)
 
     # Print statistics
     print('Label Model Predictions: Unique value and counts',
           np.unique(y_train_pred, return_counts=True))
+    
+
     if training_labels_present:
-        print('Label Model Training Accuracy',
-              np.mean(y_train_pred == y_train))
+
+        training_accuracy = np.mean(y_train_pred == y_train)
+
+        # Log the label model training accuracy to Weights & Biases
+        if use_wandb:
+            run.log({"label_model/training_accuracy": training_accuracy})
+
+        print('Label Model Training Accuracy', training_accuracy)
 
         # Log the metrics
         training_metrics_with_gt = utils.compute_metrics(
             y_preds=y_train_pred, y_true=y_train, average=args['average'])
+        
         utils.log(metrics=training_metrics_with_gt,
                   filename='label_model_with_ground_truth',
-                  results_dir=args['results_path'],
+                  results_dir=final_results_path,
                   split='train')
 
 

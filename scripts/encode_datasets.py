@@ -27,12 +27,13 @@ sys.path.append('../keyclass/')
 import torch
 import argparse
 from os.path import join
+import os
 import utils
 import models
 import pickle
 
 
-def run(args_cmd):
+def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
     args = utils.Parser(config_file_path=args_cmd.config).parse()
 
     if args['use_custom_encoder']:
@@ -52,10 +53,24 @@ def run(args_cmd):
             sentences=sentences,
             batch_size=args['end_model_batch_size'],
             show_progress_bar=args['show_progress_bar'],
-            normalize_embeddings=args['normalize_embeddings'])
-        with open(
-                join(args['data_path'], args['dataset'],
-                     f'{split}_embeddings.pkl'), 'wb') as f:
+            normalize_embeddings=args['normalize_embeddings'],
+            use_wandb=use_wandb,
+            run = run
+            )
+
+        file_location = join(
+            f"{args['results_path']}/{experiment_name}/data_embeddings/",
+            f"{split}_embeddings.pkl"
+        )
+
+        # Extract the directory part of the file path
+        directory = os.path.dirname(file_location)
+
+        # Create the directory if it doesn't exist
+        os.makedirs(directory, exist_ok=True)
+
+        # Save the embeddings
+        with open(file_location, 'wb') as f:
             pickle.dump(embeddings, f)
 
 
