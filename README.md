@@ -4,64 +4,91 @@ This repository is an attempt at reproducing the paper [Classifying Unstructured
 
 The original code for the paper was obtained from the authors' Github repository: https://github.com/autonlab/KeyClass
 
-# Repository Structure
+# 1. Repository Structure
 
 - `assets`: images used in this README file.
-- `config_files`: contains the `.yaml` configuration files used for each reproducibility test.
-- `keyclass`: the original KeyClass implementation with some adaptions (code comments and better messages).
-- `keyclass_multilabel`: an attempt at modifying KeyClass to handle MIMIC-3, a multiclass multialabel classification problem.
-- `models`: 
-- `original_data`: contains the original datasets used for training. A subfolder for each dataset.
-- `pretrained_models`: the pre-trained models provided by the researchers.
-- `results`: 
-- `scripts`: helpful scripts to run the provided code. Adapted from the original source code by the authors.
-- `pyproject.toml`: the project configuration file used by the `uv` python package manager. 
+- `config_files`: `.yaml` configuration files used for each reproducibility test.
+- `keyclass`: original KeyClass implementation with some adaptions.
+- `keyclass_multilabel`: attempt at modifying KeyClass to handle MIMIC-3, a multiclass multi-label classification problem.
+- `original_data`: original datasets for training and evaluation. 
+    - A subfolder for each dataset `imdb`, `amazon`, `dbpedia`, and `agnews`.
+- `pretrained_models`: pre-trained models provided by the researchers.
+- `results`: Results for each training run (one folder for each run).
+    - Contains subfolders `/embeddings`, `/metrics`, and `/models`.
+- `logs`: Stores logs for each training run.
+- `scripts`: helpful scripts to run the code. Adapted from the original source code.
+- `pyproject.toml`: project configuration file used by `uv` python package manager. 
 - `README.md`: this README file.
 
-# Requirements
+# 2. Requirements
+
+## 2.1 Hardware Requirements
 
 The project was tested on Linux machines running Debian/Ubuntu, with an RTX 4090 GPU, and at least 64GB of RAM.
 
-Make sure to have **CUDA 12.4** installed on the system. A guideline is available on the [Nvidia website](https://developer.nvidia.com/cuda-12-4-0-download-archive). 
+## 2.2 Environment Setup
+
+First, have **CUDA 12.4+**  installed on the system. A guideline is available on the [Nvidia website](https://developer.nvidia.com/cuda-12-4-0-download-archive). 
 
 Install the `uv` python package manager, available at https://github.com/astral-sh/uv.
 
-In addition, the project uses [Weights & Biases](https://wandb.ai/) for model training tracking. Make sure to create your account and authenticate with the API key using `uvx wandb login`. 
-
-On Debian/Ubuntu, run this command to install the necessary dependencies for compiling the `slycot` package:
-``` python
+On Debian/Ubuntu, run this command to install the dependencies to compile the `slycot` package:
+``` shell
 sudo apt install gfortran liblapack-dev libopenblas-dev
 ```
 
-After installing the above packages, on the project folder, run `uv sync` to install the necessary packages.
+After the previous command completes, **within the project folder**, run `uv sync` to install the necessary python packages. *If you want to use another python environment (conda or pip), the necessary packages are listed in the `pyproject.toml` file.*
 
-If you want to use another python environment (conda or pip), the necessary packages are listed in the `pyproject.toml` file.
+In addition, this project supports [Weights & Biases](https://wandb.ai/) for model training tracking. If you want to use this feature, please first create your account and authenticate with the API key using `uvx wandb login`.
 
-# Training
+## 2.3 Getting the Datasets, Original Models, and Results
 
-To train the model(s) in the paper, run this command:
+Finally, to download the datasets, original pre-trained models, and results, run this command:
+```shell
+cd scripts # Must be in the scripts folder 
+uv run get_data.py
+``` 
 
-``` python 
-uv run ???
+The script will ask for confirmation before dowloading each file. **Atention**: this script will **not** provide the MIMIC-3 dataset.
+
+## 2.4 MIMIC-3 Dataset Preprocessing
+
+The MIMIC-3 dataset must be previously obtained by the user.
+
+After obtaining it, please copy the `DIAGNOSES_ICD.csv` and `NOTEEVENTS.csv` files from the dataset to the `mimic_preprocessing/data` folder.
+
+Run the following commands that will generate the final train and validation sets:
+```shell 
+uv run /mimic_preprocessing/createAdmissionNoteTable.py # This will create the train and validation .csv files.
+uv run /mimic_preprocessing/generateFinalFiles.py # This will create the final .txt files with the train and validation sets.
 ```
 
-# Evaluation
+# 3. Training
+
+To train one of the models, choose one of the `.yaml`configuration files in `/config_files/` and run this command:
+``` shell
+cd scripts # Need to be in the /scripts folder 
+uv run run_all.py --config ../config_files/config_imdb.yml --use_wandb 1 # if Weights & Biases is set up 
+uv run run_all.py --config ../config_files/config_imdb.yml --use_wandb 0 # if Weights & Biases is NOT set up 
+```
+
+# 4. Evaluation
 
 To evaluate the model on ??, run:
 ``` python 
 uv run ???
 ```
 
-# Pre-trained Models
+# 5. Pre-trained Models
 
 You can download pretrained models here:
 
-# Results
+# 6. Results
 
 Here are the reproducibility results in comparison to the original paper's:
 
 
-# License and Contributing 
+# 7. License and Contributing 
 
 MIT License
 
