@@ -45,6 +45,8 @@ if __name__ == "__main__":
                             )
     args_cmd = parser_cmd.parse_args()
 
+    print(f'Loading configuration file: {args_cmd.config}')
+
     args = utils.Parser(config_file_path=args_cmd.config).parse()
 
     run = None
@@ -88,7 +90,7 @@ if __name__ == "__main__":
         )
 
     # Set up logging
-    log_file = '../logs/' + experiment_name + '.log'
+    log_file = args['log_path'] + experiment_name + '.log'
     logger = utils.setup_logging(log_file)
 
     print(f"Experiment ID: {experiment_name}")

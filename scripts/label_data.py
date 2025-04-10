@@ -41,7 +41,7 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
     args = utils.Parser(config_file_path=args_cmd.config).parse()
     print(args)
 
-    final_preds_path = args['preds_path'] + experiment_name + '/predictions'
+    final_preds_path = args['results_path'] + experiment_name + '/predictions'
     final_results_path = args['results_path'] + experiment_name + '/metrics'
     final_embeddings_path = args['results_path'] + experiment_name + '/data_embeddings'
 

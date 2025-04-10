@@ -18,10 +18,11 @@ h_sizes:
 label_model: data_programming
 label_model_lr: 0.01
 label_model_n_epochs: 100
-log_file: ../logs/config_imdb_original.log
+log_file: null
+log_path: ../logs/
 max_num: 7000
 min_df: 0.001
-model_path: ../results/imdb/
+model_path: ../models/imdb/
 n_bootstrap: 100
 n_classes: 2
 n_jobs: 10

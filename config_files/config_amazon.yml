@@ -1,46 +1,62 @@
-activation: torch.nn.LeakyReLU()
-average: weighted
-base_encoder: paraphrase-mpnet-base-v2
-criterion: torch.nn.CrossEntropyLoss(reduction='none')
-data_path: ../original_data/
-dataset: amazon
-device: cuda
-end_model_batch_size: 128
-end_model_epochs: 20
-end_model_lr: 1e-3
-end_model_patience: 2
-end_model_weight_decay: 1e-4
-h_sizes:
-- 768
-- 256
-- 64
-- 2
-label_model: data_programming
-label_model_lr: 0.01
-label_model_n_epochs: 100
-log_file: ../logs/config_amazon.log
-max_num: 140000
-min_df: 0.005
-model_path: ../models/amazon/
-n_bootstrap: 100
-n_classes: 2
-n_jobs: 10
-ngram_range: !!python/tuple
+# DATASET CONFIGURATION
+dataset: amazon                         # Amazon dataset
+data_path: ../original_data/            # Path to dataset
+n_classes: 2                            # Number of classes (paper p.9)
+max_num: 140000                         # Maximum samples per class to use
+
+# Class descriptions for Amazon
+target_0: negative, hate, expensive, bad, poor, broke, waste, horrible, would not recommend
+target_1: good, positive, excellent, amazing, love, fine, good quality, would recommend
+
+# ENCODER CONFIGURATION
+base_encoder: paraphrase-mpnet-base-v2  # MPNET encoder mentioned in paper p.9
+use_custom_encoder: false               # Using default MPNET, not BlueBERT
+normalize_embeddings: false             # Whether to normalize embeddings
+
+# KEYWORD EXTRACTION
+topk: 300                               # Top-k labeling functions per class (paper p.9)
+min_df: 0.001                           # Document frequency threshold (paper p.8)
+ngram_range: !!python/tuple             # Extract 1-2 grams as keywords
 - 1
 - 2
-normalize_embeddings: false
-preds_path: ../results/amazon/
-q_update_interval: 50
-results_path: ../results/amazon/
-self_train_batch_size: 8
-self_train_lr: 1e-6
-self_train_patience: 3
-self_train_thresh: 1-2e-3
-self_train_weight_decay: 1e-4
-show_progress_bar: true
-target_0: negative, hate, expensive, bad, poor, broke, waste, horrible, would not
-  recommend
-target_1: good, positive, excellent, amazing, love, fine, good quality, would recommend
-topk: 300
-use_custom_encoder: false
-use_noise_aware_loss: true
+
+# LABEL MODEL CONFIGURATION
+label_model: data_programming           # Using data programming or majority_vote
+label_model_lr: 0.01                    # Learning rate for label model
+label_model_n_epochs: 100               # Number of epochs for label model
+use_noise_aware_loss: true              # Using noise-aware loss for weak labels
+
+# DOWNSTREAM CLASSIFIER ARCHITECTURE
+h_sizes:                                # Neural network architecture (paper p.11)
+- 768                                   # Input size (MPNET embedding dimension)
+- 256                                   # Hidden layer 1
+- 64                                    # Hidden layer 2
+- 2                                     # Output layer (2 classes for Amazon)
+activation: torch.nn.LeakyReLU()        # LeakyReLU activation (paper p.11)
+criterion: torch.nn.CrossEntropyLoss(reduction='none')  # Loss function (paper p.11)
+
+# DOWNSTREAM CLASSIFIER TRAINING
+end_model_batch_size: 128               # Batch size for training (paper p.11)
+end_model_epochs: 20                    # Maximum training epochs (paper p.11)
+end_model_lr: 1e-3                      # Learning rate (paper p.11)
+end_model_patience: 2                   # Early stopping patience (paper p.11)
+end_model_weight_decay: 1e-4            # Weight decay for regularization
+
+# SELF-TRAINING CONFIGURATION
+self_train_batch_size: 8                # Batch size for self-training
+self_train_lr: 1e-6                     # Learning rate for self-training
+self_train_patience: 3                  # Early stopping patience for self-training
+self_train_thresh: 1-2e-3               # Agreement threshold (1-0.002 = 0.998)
+self_train_weight_decay: 1e-4           # Weight decay for self-training
+q_update_interval: 50                   # Target distribution update frequency
+
+# EVALUATION CONFIGURATION
+average: weighted                       # Type of averaging for metrics
+n_bootstrap: 100                        # Bootstrap samples for confidence intervals
+
+# INFRASTRUCTURE & LOGGING PARAMETERS
+device: cuda                            # Hardware accelerator to use
+n_jobs: 10                              # Number of parallel jobs
+show_progress_bar: true                 # Display progress during training
+log_path: ../logs/                      # Log file path
+results_path: ../results/amazon/        # Path for results

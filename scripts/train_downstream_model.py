@@ -39,7 +39,7 @@ from datetime import datetime
 
 def load_data(args, experiment_name):
 
-    final_preds_path = args['preds_path'] + experiment_name + '/predictions'
+    final_preds_path = args['results_path'] + experiment_name + '/predictions'
     final_embeddings_path = args['results_path'] + experiment_name + '/data_embeddings'
 
     with open(join(final_preds_path, f"{args['label_model']}_proba_preds.pkl"), 'rb') as f:
@@ -117,9 +117,9 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = ''):
     np.random.seed(random_seed)
 
     # Final paths
-    final_preds_path = args['preds_path'] + experiment_name + '/predictions'
+    final_preds_path = args['results_path'] + experiment_name + '/predictions'
     final_results_path = args['results_path'] + experiment_name + '/metrics'
-    final_model_path = args['model_path'] + experiment_name + '/models'
+    final_model_path = args['results_path'] + experiment_name + '/models'
 
     X_train_embed_masked, y_train_lm_masked, y_train_masked, \
      X_test_embed, y_test, training_labels_present, \
