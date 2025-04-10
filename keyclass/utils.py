@@ -362,11 +362,6 @@ class Parser:
                 self.config[key] = self.default_config[key]
                 print(f'KEY NOT FOUND! Setting the value of {key} to {self.default_config[key]}!')
 
-        # Ensure log_file has a default value if not provided
-        if 'log_file' not in self.config:
-            self.config['log_file'] = None
-            print("No log file specified. Logging to console only.")
-
         target_present = False
         for key in self.config.keys():
             if 'target' in key:

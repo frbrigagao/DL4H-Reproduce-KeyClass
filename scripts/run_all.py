@@ -56,23 +56,29 @@ if __name__ == "__main__":
     timestamp = datetime.now().strftime("%Y%m%d_%H-%M-%S")
 
     # Define the experiment name
-    experiment_name = f"{args['dataset']}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_{timestamp}"
+    if args['label_model'] == 'data_programming':
+        experiment_name = f"{args['dataset']}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_dp_{timestamp}"
+    elif args['label_model'] == 'majority_vote':
+        experiment_name = f"{args['dataset']}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_mv_{timestamp}"
+    else: # Unsupported model
+        print(f"Unsupported label model in config file: {args['label_model']}")
+        sys.exit(1)
+
+    notes = f"Dataset: {args['dataset']}\nLearning Rate: {args['end_model_lr']}\nBatch Size: {args['end_model_batch_size']}\nLabeling Functions: {args['topk']}\nLabel Model: {args['label_model']}"
 
     # Weights & Biases setup 
     if use_wandb:
-
-        notes = f"Dataset: {args['dataset']}. Learning rate: {args['end_model_lr']}. Batch size: {args['end_model_batch_size']}. Labeling Functions:{args['topk']}"
-
         tag_dataset = args['dataset']
         tag_lr = f"lr_{args['end_model_lr']}"
         tag_batch_size = f"batch_size_{args['end_model_batch_size']}"
         tag_number_lf = f"label_functions_{args['topk']}"
+        tag_label_model = args['label_model']
 
         run = wandb.init(
             project = 'dl4h-reproduce-keyclass',
             name = experiment_name,
             notes = notes,
-            tags = [tag_dataset, tag_lr, tag_batch_size, tag_number_lf ],
+            tags = [tag_dataset, tag_lr, tag_batch_size, tag_number_lf, tag_label_model ],
             config={
                 "dataset": args['dataset'],
                 "label_model": args['label_model'],
@@ -90,10 +96,12 @@ if __name__ == "__main__":
         )
 
     # Set up logging
-    log_file = args['log_path'] + experiment_name + '.log'
+    log_file = f"{args['log_path']}{experiment_name}.log"
     logger = utils.setup_logging(log_file)
 
     print(f"Experiment ID: {experiment_name}")
+    
+    print(f"Key configuration parameters:\n{notes}")
 
     print("Encoding Dataset")
     encode_datasets.run(args_cmd, use_wandb, run, experiment_name)
