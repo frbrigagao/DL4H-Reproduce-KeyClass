@@ -374,7 +374,9 @@ class Parser:
                 break
         if not target_present: 
             raise ValueError("Target must be present.")
-        self.save_config()
+        
+        # This was overwriting the .yml configuration file. Disabled. 
+        #self.save_config()
         return self.config
 
     def save_config(self):
