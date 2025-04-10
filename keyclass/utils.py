@@ -226,7 +226,7 @@ def compute_metrics_bootstrap(y_preds: np.array,
             f"{model_name}/precision": means[1],
             f"{model_name}/precision_std": stds[1],
             f"{model_name}/recall": means[2],
-            f"{model_name}/recall_std": means[2],
+            f"{model_name}/recall_std": stds[2],
         })
 
     return np.stack([means, stds], axis=1)
