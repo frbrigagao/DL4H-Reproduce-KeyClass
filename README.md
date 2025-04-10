@@ -65,25 +65,42 @@ uv run /mimic_preprocessing/generateFinalFiles.py # This will create the final .
 
 # 3. Training
 
-To train one of the models, choose one of the `.yaml`configuration files in `/config_files/` and run this command:
+To train a single model with the default configuration parameters established in the original paper, choose one of the `.yaml`configuration files in `/config_files/` and run this command:
 ``` shell
 cd scripts # Need to be in the /scripts folder 
 uv run run_all.py --config ../config_files/config_imdb.yml --use_wandb 1 # if Weights & Biases is set up 
 uv run run_all.py --config ../config_files/config_imdb.yml --use_wandb 0 # if Weights & Biases is NOT set up 
 ```
 
-# 4. Evaluation
+# 4. Ablations/Extensions
+
+## 4.1 Experiment 1 - Testing different batch sizes and learning rates
+
+To run the first experiment mentioned in the planning document, run this command:
+```shell
+cd scripts # Need to be in the /scripts folder 
+uv run run_experiments_1.py --use_wandb --keep_configs # If you want Weights & Biases logging and to keep the temporary config files.
+uv run run_experiments_1.py # Only local logs
+```
+
+**Attention**: This script might take several hours to complete due to the number of experiments.
+
+## 4.2 Experiment 2 - Testing different number of labeling functions for the DBPedia dataset 
+
+
+
+# 5. Evaluation
 
 To evaluate the model on ??, run:
 ``` python 
 uv run ???
 ```
 
-# 5. Pre-trained Models
+# 6. Pre-trained Models
 
 You can download pretrained models here:
 
-# 6. Results
+# 7. Results
 
 Here are the reproducibility results in comparison to the original paper's:
 
