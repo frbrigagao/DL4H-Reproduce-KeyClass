@@ -37,7 +37,12 @@ On Debian/Ubuntu, run this command to install the dependencies to compile the `s
 sudo apt install gfortran liblapack-dev libopenblas-dev
 ```
 
-After the previous command completes, **within the project folder**, run `uv sync` to install the necessary python packages. *If you want to use another python environment (conda or pip), the necessary packages are listed in the `pyproject.toml` file.*
+After the previous command completes, **within the project folder**, run:
+
+- `source .venv/bin/activate` to activate the project's virtual environment.
+- `uv sync` to install the necessary python packages. 
+
+*If you want to use another python environment (conda or pip), the necessary packages are listed in the `pyproject.toml` file.*
 
 In addition, this project supports [Weights & Biases](https://wandb.ai/) for model training tracking. If you want to use this feature, please first create your account and authenticate with the API key using `uvx wandb login`.
 
