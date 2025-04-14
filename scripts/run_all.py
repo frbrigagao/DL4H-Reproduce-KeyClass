@@ -43,6 +43,11 @@ if __name__ == "__main__":
                             type=int,
                             help="If set to 1 will use Weights and Biases to log the runs"
                             )
+    parser_cmd.add_argument('--skip_self_training',
+                        default=0,
+                        type=int,
+                        help="If set to 1 the script will bypass the self-training runs"
+                        )
     args_cmd = parser_cmd.parse_args()
 
     print(f'Loading configuration file: {args_cmd.config}')
@@ -51,6 +56,7 @@ if __name__ == "__main__":
 
     run = None
     use_wandb = True if args_cmd.use_wandb == 1 else False
+    skip_self_training = True if args_cmd.skip_self_training == 1 else False
 
     # Get current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H-%M-%S")
@@ -74,11 +80,16 @@ if __name__ == "__main__":
         tag_number_lf = f"label_functions_{args['topk']}"
         tag_label_model = args['label_model']
 
+        if skip_self_training:
+            experiment_tags =  [tag_dataset, tag_lr, tag_batch_size, tag_number_lf, tag_label_model, "no_self_training" ]
+        else:
+            experiment_tags =  [tag_dataset, tag_lr, tag_batch_size, tag_number_lf, tag_label_model ]
+
         run = wandb.init(
             project = 'dl4h-reproduce-keyclass',
             name = experiment_name,
             notes = notes,
-            tags = [tag_dataset, tag_lr, tag_batch_size, tag_number_lf, tag_label_model ],
+            tags = experiment_tags,
             config={
                 "dataset": args['dataset'],
                 "label_model": args['label_model'],
@@ -110,8 +121,13 @@ if __name__ == "__main__":
     label_data.run(args_cmd, use_wandb, run, experiment_name)
 
     print("Training Model")
-    results = train_downstream_model.train(args_cmd, use_wandb, run, experiment_name)
-    print("Model Results:")
+    results = train_downstream_model.train(args_cmd, use_wandb, run, experiment_name, skip_self_training)
+
+    if skip_self_training:
+        print("Model Results (end-model WITHOUT self-training):")
+    else:
+        print("Model Results (self-trained end-model):")
+
     print(results)
 
     if use_wandb:

@@ -107,7 +107,7 @@ def load_data(args, experiment_name):
      training_labels_present, sample_weights_masked, proba_preds_masked
 
 
-def train(args_cmd, use_wandb = False, run = None, experiment_name = ''):
+def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_self_training = False):
 
     args = utils.Parser(config_file_path=args_cmd.config).parse()
 
@@ -215,64 +215,67 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = ''):
               filename='end_model_with_ground_truth',
               results_dir=final_results_path,
               split='test')
-
-    print('\n===== Self-training the downstream classifier =====\n')
-
-    # Fetching the raw text data for self-training
-    X_train_text = utils.fetch_data(dataset=args['dataset'],
-                                    path=args['data_path'],
-                                    split='train')
-    X_test_text = utils.fetch_data(dataset=args['dataset'],
-                                   path=args['data_path'],
-                                   split='test')
-
-    # Self-train the end model
-    model = train_classifier.self_train(
-        model=model,
-        X_train=X_train_text,
-        X_val=X_test_text,
-        y_val=y_test,
-        device=torch.device(args['device']),
-        lr=eval(args['self_train_lr']),
-        weight_decay=eval(args['self_train_weight_decay']),
-        patience=args['self_train_patience'],
-        batch_size=args['self_train_batch_size'],
-        q_update_interval=args['q_update_interval'],
-        self_train_thresh=eval(args['self_train_thresh']),
-        print_eval=True,
-        use_wandb = use_wandb,
-        run = run)
-
-    # Save self-trained end model to file
-
-    model_name = f'end_model_self_trained.pth'
-    print(f'Saving model {model_name}...')
-    with open(join(final_model_path, model_name), 'wb') as f:
-        torch.save(model, f)
-
-    # Run predictions
-    end_model_preds_test = model.predict_proba(X_test_text, batch_size=args['self_train_batch_size'], raw_text=True)
-
-    # Save the predictions
-    with open(join(final_preds_path, 'end_model_self_trained_preds_test.pkl'), 'wb') as f:
-        pickle.dump(end_model_preds_test, f)
-
-    # Print statistics
-    testing_metrics = utils.compute_metrics_bootstrap(
-        y_preds=np.argmax(end_model_preds_test, axis=1),
-        y_true=y_test,
-        average=args['average'],
-        n_bootstrap=args['n_bootstrap'],
-        n_jobs=args['n_jobs'],
-        model_name='self_trained_end_model',
-        use_wandb=use_wandb,
-        run=run)
     
-    # Log statistics to file
-    utils.log(metrics=testing_metrics,
-              filename='end_model_with_ground_truth_self_trained',
-              results_dir=final_results_path,
-              split='test')
+    if skip_self_training:
+        print('\n===== SKIPPING self-training of the downstream classifier ======\n')
+    else:
+        print('\n===== Self-training the downstream classifier =====\n')
+
+        # Fetching the raw text data for self-training
+        X_train_text = utils.fetch_data(dataset=args['dataset'],
+                                        path=args['data_path'],
+                                        split='train')
+        X_test_text = utils.fetch_data(dataset=args['dataset'],
+                                    path=args['data_path'],
+                                    split='test')
+
+        # Self-train the end model
+        model = train_classifier.self_train(
+            model=model,
+            X_train=X_train_text,
+            X_val=X_test_text,
+            y_val=y_test,
+            device=torch.device(args['device']),
+            lr=eval(args['self_train_lr']),
+            weight_decay=eval(args['self_train_weight_decay']),
+            patience=args['self_train_patience'],
+            batch_size=args['self_train_batch_size'],
+            q_update_interval=args['q_update_interval'],
+            self_train_thresh=eval(args['self_train_thresh']),
+            print_eval=True,
+            use_wandb = use_wandb,
+            run = run)
+
+        # Save self-trained end model to file
+
+        model_name = f'end_model_self_trained.pth'
+        print(f'Saving model {model_name}...')
+        with open(join(final_model_path, model_name), 'wb') as f:
+            torch.save(model, f)
+
+        # Run predictions
+        end_model_preds_test = model.predict_proba(X_test_text, batch_size=args['self_train_batch_size'], raw_text=True)
+
+        # Save the predictions
+        with open(join(final_preds_path, 'end_model_self_trained_preds_test.pkl'), 'wb') as f:
+            pickle.dump(end_model_preds_test, f)
+
+        # Print statistics
+        testing_metrics = utils.compute_metrics_bootstrap(
+            y_preds=np.argmax(end_model_preds_test, axis=1),
+            y_true=y_test,
+            average=args['average'],
+            n_bootstrap=args['n_bootstrap'],
+            n_jobs=args['n_jobs'],
+            model_name='self_trained_end_model',
+            use_wandb=use_wandb,
+            run=run)
+        
+        # Log statistics to file
+        utils.log(metrics=testing_metrics,
+                filename='end_model_with_ground_truth_self_trained',
+                results_dir=final_results_path,
+                split='test')
     
     # Return metrics 
     return testing_metrics
@@ -286,6 +289,8 @@ def test(args_cmd, end_model_path, end_model_self_trained_path, experiment_name)
     random_seed = args_cmd.random_seed
     torch.manual_seed(random_seed)
     np.random.seed(random_seed)
+
+    print('\n===== Testing the end model downstream classifier =====\n')
 
     X_train_embed_masked, y_train_lm_masked, y_train_masked, \
      X_test_embed, y_test, training_labels_present, \
@@ -318,7 +323,7 @@ def test(args_cmd, end_model_path, end_model_self_trained_path, experiment_name)
         n_jobs=args['n_jobs'])
     print('testing_metrics', testing_metrics)
 
-    print('\n===== Self-training the downstream classifier =====\n')
+    print('\n===== Testing the end model self-trained downstream classifier =====\n')
 
     # Fetching the raw text data for self-training
     X_train_text = utils.fetch_data(dataset=args['dataset'],
@@ -341,6 +346,6 @@ def test(args_cmd, end_model_path, end_model_self_trained_path, experiment_name)
         n_bootstrap=args['n_bootstrap'],
         n_jobs=args['n_jobs'])
         
-    print('testing_metrics after self train', testing_metrics)
+    print('testing_metrics after self-train', testing_metrics)
     
     return testing_metrics
