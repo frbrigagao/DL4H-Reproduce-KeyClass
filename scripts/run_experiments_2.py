@@ -74,7 +74,7 @@ def check_log_for_memory_error(log_file):
         print(f"Error checking log file for memory errors: {e}")
         return False
 
-def run_experiment(dataset, learning_rate, batch_size, label_model, labeling_functions, use_wandb, keep_configs=False):
+def run_experiment(dataset, learning_rate, batch_size, label_model, labeling_functions, use_wandb, keep_configs=False, skip_self_training = False):
     """Run a single experiment with the given parameters"""
     try:
         # Load the base config using utils.Parser
@@ -104,7 +104,8 @@ def run_experiment(dataset, learning_rate, batch_size, label_model, labeling_fun
         
         # Run the experiment
         wandb_flag = "1" if use_wandb else "0"
-        cmd = f"python run_all.py --config {temp_config_path} --use_wandb {wandb_flag}"
+        skip_self_training_flag = "1" if skip_self_training else "0"
+        cmd = f"python run_all.py --config {temp_config_path} --use_wandb {wandb_flag} --skip_self_training {skip_self_training_flag}"
         
         # Record the start time
         start_time = time.time()
@@ -168,7 +169,7 @@ def run_experiment(dataset, learning_rate, batch_size, label_model, labeling_fun
         print(f"Error running experiment: {e}")
         return None
 
-def extract_metrics(experiment_folder):
+def extract_metrics(experiment_folder, skipped_self_training = False):
     """Extract metrics from experiment results"""
     metrics = {}
     
@@ -224,8 +225,8 @@ def extract_metrics(experiment_folder):
         metrics['end_model_recall'] = None
         metrics['end_model_recall_std'] = None
     
-    # Extract self-trained end model metrics if available
-    if os.path.exists(self_trained_path):
+    # Extract self-trained end model metrics if available and self-training wasn´t skipped
+    if skipped_self_training == False and os.path.exists(self_trained_path):
         try:
             with open(self_trained_path, 'r') as f:
                 data = json.load(f)
@@ -364,6 +365,9 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
                     for lf_count in lf_options:
                         # Create a unique experiment identifier for display
                         exp_id = f"{dataset}_{lr}_{batch_size}_{label_model}_{lf_count}"
+
+                        # Default behavior is to also execute the self-training run
+                        skip_self_training = False
                         
                         # Check if this experiment has already been run by checking the DataFrame
                         experiment_mask = ((results['dataset'] == dataset) & 
@@ -376,15 +380,21 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
                         if experiment_mask.any():
                             print(f"Skipping already completed experiment: {exp_id}")
                             continue
+
+                        # Skip self-training for amazon dataset with majority_vote due to hardware/time constraints
+                        if dataset == 'amazon' and label_model == 'majority_vote':
+                            skip_self_training = True 
                         
                         print(f"\n=== Running experiment: dataset={dataset}, lr={lr}, batch_size={batch_size}, label_model={label_model}, lf_count={lf_count} ===\n")
+                        if skip_self_training:
+                            print(f"\n=== Experiment will SKIP self-training ===\n")
                         
                         # Run experiment
-                        experiment_info = run_experiment(dataset, lr, batch_size, label_model, lf_count, use_wandb, keep_configs)
+                        experiment_info = run_experiment(dataset, lr, batch_size, label_model, lf_count, use_wandb, keep_configs, skip_self_training)
                         
                         if experiment_info:
                             # Extract metrics
-                            metrics = extract_metrics(experiment_info['results_folder'])
+                            metrics = extract_metrics(experiment_info['results_folder'], skip_self_training)
                             
                             # Add to results DataFrame
                             result = pd.DataFrame([{
