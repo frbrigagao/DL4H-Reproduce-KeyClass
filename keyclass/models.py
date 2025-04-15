@@ -194,9 +194,7 @@ class Encoder(torch.nn.Module):
                sentences: Union[str, List[str]],
                batch_size: int = 32,
                show_progress_bar: Optional[bool] = False,
-               normalize_embeddings: bool = False,
-               use_wandb: bool = False,
-               run: object = None):
+               normalize_embeddings: bool = False):
         """
         Computes sentence embeddings using the forward function
 

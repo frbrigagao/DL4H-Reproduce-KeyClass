@@ -49,13 +49,12 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
         sentences = utils.fetch_data(dataset=args['dataset'],
                                      split=split,
                                      path=args['data_path'])
+
         embeddings = model.encode(
             sentences=sentences,
             batch_size=args['end_model_batch_size'],
             show_progress_bar=args['show_progress_bar'],
-            normalize_embeddings=args['normalize_embeddings'],
-            use_wandb=use_wandb,
-            run = run
+            normalize_embeddings=args['normalize_embeddings']
             )
 
         file_location = join(
