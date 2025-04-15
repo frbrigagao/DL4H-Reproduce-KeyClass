@@ -13,6 +13,7 @@ The original code for the paper was obtained from the authors' Github repository
 - `original_data`: original datasets for training and evaluation. 
     - A subfolder for each dataset `imdb`, `amazon`, `dbpedia`, and `agnews`.
 - `pretrained_models`: pre-trained models provided by the researchers.
+- `mimic_preprocessing`: scripts to pre-process the original MIMIC-3 csv files into a train/test dataset and to extract icd9 descriptors for target classification.
 - `results`: Results for each training run (one folder for each run).
     - Contains subfolders `/embeddings`, `/metrics`, and `/models`.
 - `logs`: Stores logs for each training run.
@@ -32,9 +33,11 @@ First, have **CUDA 12.4+**  installed on the system. A guideline is available on
 
 Install the `uv` python package manager, available at https://github.com/astral-sh/uv.
 
-On Debian/Ubuntu, run this command to install the dependencies to compile the `slycot` package:
+On Debian/Ubuntu, run this command to install the dependencies to compile the `slycot` package and to run R scripts:
 ``` shell
 sudo apt install gfortran liblapack-dev libopenblas-dev
+sudo apt install r-base r-base-dev
+sudo apt install r-cran-stringr r-cran-data.table r-cran-dplyr r-cran-lubridate r-cran-caret
 ```
 
 After the previous command completes, **within the project folder**, run:
@@ -60,13 +63,9 @@ The script will ask for confirmation before dowloading each file. **Atention**: 
 
 The MIMIC-3 dataset must be previously obtained by the user.
 
-After obtaining it, please copy the `DIAGNOSES_ICD.csv` and `NOTEEVENTS.csv` files from the dataset to the `mimic_preprocessing/data` folder.
+After obtaining it, please copy the `DIAGNOSES_ICD.csv` and `NOTEEVENTS.csv` files from the dataset to the `mimic_preprocessing/mimic_csv_files` folder.
 
-Run the following commands that will generate the final train and validation sets:
-```shell 
-uv run /mimic_preprocessing/createAdmissionNoteTable.py # This will create the train and validation .csv files.
-uv run /mimic_preprocessing/generateFinalFiles.py # This will create the final .txt files with the train and validation sets.
-```
+... Add guide to executing the scripts ... 
 
 # 3. Training
 
