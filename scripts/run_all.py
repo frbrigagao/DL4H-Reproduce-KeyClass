@@ -54,6 +54,10 @@ if __name__ == "__main__":
 
     args = utils.Parser(config_file_path=args_cmd.config).parse()
 
+    if args['dataset'] == 'mimic' or args['problem_type'] == 'multi_label':
+        print(f"Original implementation of Keyclass does not include multi-label support. Use run_all_multilabel.py (experimental)")
+        sys.exit(1)
+
     run = None
     use_wandb = True if args_cmd.use_wandb == 1 else False
     skip_self_training = True if args_cmd.skip_self_training == 1 else False
