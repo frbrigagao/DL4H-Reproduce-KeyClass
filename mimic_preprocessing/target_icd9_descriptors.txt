@@ -1,19 +1,19 @@
-target_00: tuberculosis, found, unspecified, bacilli, bacteriological, examination, tubercle, histological, specified, sputum, microscopy, confirmed, infection, tuberculous, due, bacterial, done, unknown, present, culture
-target_01: neoplasm, malignant, unspecified, lymph, nodes, benign, sites, cell, limb, site, lymphoma, hodgkin, skin, leukemia, specified, carcinoma, disease, tumor, remission, upper
-target_02: unspecified, type, diabetes, uncontrolled, disorders, deficiency, manifestations, stated, metabolism, specified, mention, mellitus, secondary, ii, juvenile, without, goiter, disorder, vitamin, thyrotoxic
-target_03: anemia, unspecified, disease, deficiency, cell, blood, specified, anemias, thalassemia, hemolytic, sickle, crisis, congenital, neutropenia, iron, secondary, chronic, hereditary, due, induced
-target_04: disorder, unspecified, type, episode, remission, dependence, schizophrenia, drug, abuse, specified, bipolar, disorders, acute, current, chronic, psychotic, episodic, manic, affective, recent
-target_05: migraine, without, unspecified, intractable, mention, status, migrainosus, elsewhere, classified, epilepsy, sleep, diseases, cerebral, stated, disorder, headache, aura, nerve, meningitis, syndrome
-target_06: unspecified, eye, vision, impairment, disorders, retinal, corneal, glaucoma, acute, associated, loss, ear, cataract, chronic, total, otitis, eyelid, disorder, body, visual
-target_07: unspecified, disease, heart, chronic, acute, infarction, artery, embolism, kidney, thrombosis, stage, failure, cerebrovascular, venous, without, episode, care, cerebral, late, effects
-target_08: due, acute, pneumonia, unspecified, chronic, respiratory, influenza, pulmonary, lung, virus, asthma, sinusitis, obstruction, bronchitis, diseases, elsewhere, classified, larynx, manifestations, without
-target_09: unspecified, obstruction, without, mention, hemorrhage, ulcer, chronic, acute, perforation, hernia, specified, gangrene, recurrent, intestine, cholecystitis, teeth, gastric, site, dental, gallbladder
-target_10: unspecified, specified, chronic, lesion, female, kidney, acute, glomerulonephritis, genital, disorders, urinary, prostate, cervix, classified, elsewhere, renal, disorder, tract, urethral, breast
-target_11: condition, complication, unspecified, antepartum, mention, delivered, without, care, episode, applicable, postpartum, pregnancy, mother, abortion, labor, complicating, childbirth, puerperium, delivery, complicated
-target_12: due, unspecified, dermatitis, ulcer, specified, abscess, pressure, cellulitis, skin, contact, erythematous, condition, body, carbuncle, furuncle, eczema, exfoliation, involving, percent, surface
-target_13: unspecified, region, arthropathy, joint, sites, specified, associated, site, foot, hand, ankle, shoulder, upper, forearm, pelvic, thigh, arm, lower, leg, multiple
-target_14: congenital, anomalies, unspecified, specified, anomaly, cleft, complete, deficiency, incomplete, longitudinal, without, limb, system, syndrome, partial, stenosis, lip, atresia, palate, ear
-target_15: newborn, fetus, grams, fetal, affecting, unspecified, dates, light, malnutrition, without, mention, due, neonatal, respiratory, hemorrhage, maternal, birth, placenta, perinatal, breast
-target_16: abnormal, nonspecific, abdominal, unspecified, findings, smear, papanicolaou, pain, quadrant, function, squamous, symptoms, swelling, mass, lump, study, involving, examination, results, sleep
-target_17: open, unspecified, fracture, injury, loss, without, wound, consciousness, closed, mention, intracranial, degree, skull, body, hemorrhage, level, third, burn, poisoning, hours
-target_18: accident, injuring, unspecified, vehicle, involving, motor, history, causing, effects, use, accidental, therapeutic, adverse, poisoning, personal, specified, injury, due, collision, screening
+target_00: tuberculosis, found, unspecified, bacilli, bacteriological, examination, tubercle, histological, specified, sputum, microscopy, confirmed, infection, tuberculous, due
+target_01: neoplasm, malignant, unspecified, lymph, nodes, benign, sites, cell, limb, site, lymphoma, hodgkin, skin, leukemia, specified
+target_02: unspecified, type, diabetes, uncontrolled, disorders, deficiency, manifestations, stated, metabolism, specified, mention, mellitus, secondary, ii, juvenile
+target_03: anemia, unspecified, disease, deficiency, cell, blood, specified, anemias, thalassemia, hemolytic, sickle, crisis, congenital, neutropenia, iron
+target_04: disorder, unspecified, type, episode, remission, dependence, schizophrenia, drug, abuse, specified, bipolar, disorders, acute, current, chronic
+target_05: migraine, without, unspecified, intractable, mention, status, migrainosus, elsewhere, classified, epilepsy, sleep, diseases, cerebral, stated, disorder
+target_06: unspecified, eye, vision, impairment, disorders, retinal, corneal, glaucoma, acute, associated, loss, ear, cataract, chronic, total
+target_07: unspecified, disease, heart, chronic, acute, infarction, artery, embolism, kidney, thrombosis, stage, failure, cerebrovascular, venous, without
+target_08: due, acute, pneumonia, unspecified, chronic, respiratory, influenza, pulmonary, lung, virus, asthma, sinusitis, obstruction, bronchitis, diseases
+target_09: unspecified, obstruction, without, mention, hemorrhage, ulcer, chronic, acute, perforation, hernia, specified, gangrene, recurrent, intestine, cholecystitis
+target_10: unspecified, specified, chronic, lesion, female, kidney, acute, glomerulonephritis, genital, disorders, urinary, prostate, cervix, classified, elsewhere
+target_11: condition, complication, unspecified, antepartum, mention, delivered, without, care, episode, applicable, postpartum, pregnancy, mother, abortion, labor
+target_12: due, unspecified, dermatitis, ulcer, specified, abscess, pressure, cellulitis, skin, contact, erythematous, condition, body, carbuncle, furuncle
+target_13: unspecified, region, arthropathy, joint, sites, specified, associated, site, foot, hand, ankle, shoulder, upper, forearm, pelvic
+target_14: congenital, anomalies, unspecified, specified, anomaly, cleft, complete, deficiency, incomplete, longitudinal, without, limb, system, syndrome, partial
+target_15: newborn, fetus, grams, fetal, affecting, unspecified, dates, light, malnutrition, without, mention, due, neonatal, respiratory, hemorrhage
+target_16: open, unspecified, fracture, injury, loss, without, wound, consciousness, closed, mention, intracranial, degree, skull, body, hemorrhage
+target_17: accident, injuring, vehicle, involving, motor, unspecified, causing, effects, accidental, therapeutic, use, adverse, poisoning, injury, collision
+target_18: history, personal, unspecified, screening, malignant, examination, family, status, neoplasm, specified, suspected, vaccination, prophylactic, need, aftercare

@@ -51,7 +51,7 @@ def read_icd9_descriptions(file_path):
 def categorize_icd9_code(code):
     """Assign the ICD-9 code to its top-level category (1-19) based on the R script logic."""
     if code.startswith('E'):
-        return 19  # cat:19
+        return 18  # cat:18
     elif code.startswith('V'):
         return 19  # cat:19
     else:
@@ -90,10 +90,8 @@ def categorize_icd9_code(code):
                 return 15  # cat:15 - Congenital anomalies
             elif 760 <= numeric_code <= 779:
                 return 16  # cat:16 - Perinatal period conditions
-            elif 780 <= numeric_code <= 799:
-                return 17  # cat:17 (Note: This doesn't match the paper's range)
             elif 800 <= numeric_code <= 999:
-                return 18  # cat:18 - Injury and poisoning
+                return 17  # cat:17 - Injury and poisoning
         except ValueError:
             # If code cannot be parsed as a number
             return None

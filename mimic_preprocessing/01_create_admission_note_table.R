@@ -15,12 +15,12 @@ Sys.setenv(TZ='UTC')
 ##################################################################################
 # Load in Data
 ##################################################################################
-notes = as_tibble(fread('/mimic_csv_files/NOTEEVENTS.csv'))# actual file use when testing is done
+notes = as_tibble(fread('mimic_csv_files/NOTEEVENTS.csv'))# actual file use when testing is done
 
 # Please check out the below rows in the clinical notes. The addendum one has information
 # like DISCHARGE DIAGNOSES which gives away pretty easily if kept in the data.
 # notes = filter(notes, ROW_ID %in% c(8772, 55972))
-diagnoses = as_tibble(fread('/mimic_csv_files/DIAGNOSES_ICD.csv'))
+diagnoses = as_tibble(fread('mimic_csv_files/DIAGNOSES_ICD.csv'))
 
 ##################################################################################
 # Ensure consistent types for join operations
@@ -109,11 +109,11 @@ for (i in 1:nrow(icd9NotesDataTable)){
     }
     else
     {
-      if (substr(icd9, 1, 1) == "E"){
+      if (substr(icd9, 1, 1) == "E"){  # External causes of injury
         icd9Level2 = substr(icd9, 1, 4)
-        icd9Top = "cat:19"
+        icd9Top = "cat:18"
       }
-      else if (substr(icd9, 1,1) == "V"){
+      else if (substr(icd9, 1,1) == "V"){ # Supplementary
         icd9Level2 = substr(icd9, 1, 3)
         icd9Top = "cat:19"
       }
@@ -164,15 +164,12 @@ for (i in 1:nrow(icd9NotesDataTable)){
         else if (icd9 >= 740 && icd9 <= 759){
           icd9Top = "cat:15"
         }
-        else if (icd9 >= 760 && icd9 <= 779){
+        else if (icd9 >= 760 && icd9 <= 779){ # Perinatal period conditions
           icd9Top = "cat:16"
-        }
-        else if (icd9 >= 780 && icd9 <= 799){   # ATTENTION: CODE DOESN´T MATCH Table 1 of the FasTag Paper
-          icd9Top = "cat:17"                    # In the FasTag paper category 17 goes from 800-899
-        }                                       #
-        else if (icd9 >= 800 && icd9 <= 999){   #
-          icd9Top = "cat:18"                    #
-        }                                       #
+        }                                    
+        else if (icd9 >= 800 && icd9 <= 999){   # Injury and Poisoning , Paper skips (ic9-s 780-799)
+          icd9Top = "cat:17"                    
+        }                                       
       }
     }
     icd9ListTop = c(icd9ListTop, icd9Top)
@@ -211,7 +208,7 @@ icd9NotesDataTable_valid = icd9NotesDataTable[-trainingIdxs,]
 # Sample Data:
 # "1","100001","58526","25013-3371-5849-5780-V5867-25063-5363-4580-25043-40390-5853-25053-36201-25083-7078-V1351",2117-09-17,"Report","Text of the report","250-337-584-578-V5867-536-458-403-585-362-707-V1351","cat:3-cat:6-cat:11-cat:10-cat:19-cat:8-cat:7-cat:13"
 
-write.csv(icd9NotesDataTable, '/intermediate_files/icd9NotesDataTable.csv')
+write.csv(icd9NotesDataTable, 'intermediate_files/icd9NotesDataTable.csv')
 write.csv(icd9NotesDataTable_train, 'intermediate_files/icd9NotesDataTable_train.csv')
 write.csv(icd9NotesDataTable_valid, 'intermediate_files/icd9NotesDataTable_test.csv')
 
