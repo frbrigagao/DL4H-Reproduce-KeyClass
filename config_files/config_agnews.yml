@@ -3,6 +3,7 @@ dataset: agnews                         # AG News dataset
 data_path: ../original_data/            # Path to dataset
 n_classes: 4                            # Number of classes in AG News dataset
 max_num: 14000                          # Maximum samples per class to use
+problem_type: single_label              # Single-label classification problem
 
 # Class descriptions for AG News
 target_0: politics

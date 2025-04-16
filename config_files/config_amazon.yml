@@ -3,6 +3,7 @@ dataset: amazon                         # Amazon dataset
 data_path: ../original_data/            # Path to dataset
 n_classes: 2                            # Number of classes (paper p.9)
 max_num: 140000                         # Maximum samples per class to use
+problem_type: single_label              # Single-label classification problem
 
 # Class descriptions for Amazon
 target_0: negative, hate, expensive, bad, poor, broke, waste, horrible, would not recommend
