@@ -32,7 +32,7 @@ from datetime import datetime
 if __name__ == "__main__":
     parser_cmd = argparse.ArgumentParser()
     parser_cmd.add_argument('--config',
-                            default='../config_files/config_dbpedia.yml',
+                            default='../config_files/config_mimic_unfiltered.yml',
                             help='Configuration file')
     parser_cmd.add_argument('--random_seed',
                             default=0,
@@ -63,27 +63,31 @@ if __name__ == "__main__":
 
     # Get current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H-%M-%S")
+    target_descriptions = 'filtered' if 'filtered' in args_cmd.config else 'unfiltered'
+    ngram_desc = f"{args['ngram_range'][0]}_{args['ngram_range'][1]}"
 
     # Define the experiment name
     if args['label_model'] == 'data_programming':
-        # Example experiment name structure: imdb_lr_0.001_b_128_lf_300_dp_20230415_103000
-        experiment_name = f"{args['dataset']}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_dp_{timestamp}"
+        # Example experiment name structure: mimic_filtered_lr_0.001_b_128_lf_300_dp_20230415_103000
+        experiment_name = f"{args['dataset']}_{target_descriptions}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_ngram_{ngram_desc}_dp_{timestamp}"
     elif args['label_model'] == 'majority_vote':
-        # Example experiment name structure: imdb_lr_0.001_b_128_lf_300_mv_20230415_103000
-        experiment_name = f"{args['dataset']}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_mv_{timestamp}"
+        # Example experiment name structure: mimic_filtered_lr_0.001_b_128_lf_300_mv_20230415_103000
+        experiment_name = f"{args['dataset']}_{target_descriptions}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_ngram_{ngram_desc}__mv_{timestamp}"
     else: # Unsupported model
         print(f"Unsupported label model in config file: {args['label_model']}")
         sys.exit(1)
 
     # Define notes for logging, useful for quick reference in W&B or log
-    #notes = f"Dataset: {args['dataset']}\nLearning Rate: {args['end_model_lr']}\nBatch Size: {args['end_model_batch_size']}\nLabeling Functions: {args['topk']}\nLabel Model: {args['label_model']}"
+
     notes = (
         f"Dataset: {args['dataset']} ({args.get('problem_type', 'single_label')})\n" # Include problem_type
         f"Learning Rate: {args['end_model_lr']}\n"
         f"Batch Size: {args['end_model_batch_size']}\n"
         f"Labeling Functions (TopK): {args['topk']}\n"
         f"Label Model: {args['label_model']}\n"
-        f"Evaluation Averaging: {args['average']}" # Include averaging method
+        f"Evaluation Averaging: {args['average']}\n"
+        f"Target Descriptions: {target_descriptions}\n"
+        f"N-gram Range: {args['ngram_range']}"
     )
 
     # Weights & Biases setup (optional)
@@ -94,16 +98,13 @@ if __name__ == "__main__":
         tag_batch_size = f"batch_size_{args['end_model_batch_size']}"
         tag_number_lf = f"label_functions_{args['topk']}"
         tag_label_model = args['label_model']
-        tag_average = f"avg_{args['average']}" # Add tag for averaging
-
-        # if skip_self_training:
-        #     experiment_tags =  [tag_dataset, tag_lr, tag_batch_size, tag_number_lf, tag_label_model, "no_self_training" ]
-        # else:
-        #     experiment_tags =  [tag_dataset, tag_lr, tag_batch_size, tag_number_lf, tag_label_model ]
+        tag_average = f"avg_{args['average']}" 
+        tag_target_descriptions = f"target_descriptions_{target_descriptions}"
+        tag_ngram = f"ngram_{ngram_desc}"
 
         experiment_tags = [
             tag_dataset, tag_problem_type, tag_lr, tag_batch_size,
-            tag_number_lf, tag_label_model, tag_average
+            tag_number_lf, tag_label_model, tag_average, tag_target_descriptions, tag_ngram
         ]
         if skip_self_training:
             experiment_tags.append("no_self_training")
@@ -127,16 +128,15 @@ if __name__ == "__main__":
                 "topk_label_functions": args['topk'],
                 "base_encoder": args['base_encoder'],
                 "average": args['average'],
-                "problem_type": tag_problem_type
+                "problem_type": tag_problem_type,
+                "target_descritions": target_descriptions,
+                "ngram_range": args['ngram_range'],
             }
         )
 
     # Set up logging
     log_file = f"{args['log_path']}{experiment_name}.log"
     logger = utils.setup_logging(log_file)
-
-    #if args['dataset'] == 'mimic':
-    #    experiment_name = 'mimic_lr_1e-3_b_128_lf_30_dp_20250415_21-03-10'
 
     print(f"Experiment ID: {experiment_name}")
     
