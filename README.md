@@ -103,7 +103,7 @@ This will create the following files in the `mimic_preprocessing/output_mimic_fi
 6.**Generate ICD-9 Descriptors (optional)**: The descriptors are already included in the `/config_files/config_mimic.yml`. However, if you want to manually generate them, run the following script:
 ```shell
 cd mimic_preprocessing # Navigate to the preprocessing directory
-uv run 00_generate_icd9_descriptors.py icd9_descriptions/CMS32_DESC_LONG_DX.txt --output_file target_icd9_descriptors.txt 
+uv run 00_generate_icd9_descriptors.py icd9_descriptions/CMS32_DESC_LONG_DX.txt --top_n 30 --output_file target_icd9_descriptors.txt 
 ```
 The output file will be `target_icd9_descriptors.txt`.
 

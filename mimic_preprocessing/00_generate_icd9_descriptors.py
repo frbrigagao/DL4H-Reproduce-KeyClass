@@ -13,8 +13,8 @@ except LookupError:
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Extract frequent keywords from ICD-9 descriptions by category.')
-    parser.add_argument('input_file', help='Path to the ICD-9 description file')
-    parser.add_argument('--output_file', help='Path to save output file (if not specified, prints to console)')
+    parser.add_argument('--input_file', default='icd9_descriptions/CMS32_DESC_LONG_DX.txt', help='Path to the ICD-9 description file')
+    parser.add_argument('--output_file', default='target_icd9_descriptors.txt', help='Path to save output file (if not specified, prints to console)')
     parser.add_argument('--top_n', type=int, default=15, help='Number of top keywords to return per category')
     parser.add_argument('--min_freq', type=float, default=0.001, help='Minimum document frequency for keywords')
     return parser.parse_args()
@@ -118,6 +118,7 @@ def extract_keywords(descriptions):
         combined_text = ' '.join(desc_list).lower()
         
         # Tokenize and clean words
+        # Removes commas, etc.
         words = re.findall(r'\b[a-z]+\b', combined_text)
         
         # Remove stop words
