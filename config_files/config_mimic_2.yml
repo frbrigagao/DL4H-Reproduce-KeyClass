@@ -73,7 +73,7 @@ average: samples                       # Type of averaging for metrics (paper fo
 n_bootstrap: 100                        # Bootstrap samples for confidence intervals
 
 # INFRASTRUCTURE & LOGGING PARAMETERS
-device: cpu                            # Hardware accelerator to use
+device: cuda                            # Hardware accelerator to use
 n_jobs: 10                              # Number of parallel jobs
 show_progress_bar: true                 # Display progress during training
 log_path: ../logs/                      # Log file path
