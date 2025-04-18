@@ -12,7 +12,7 @@ The original code for the paper was obtained from the authors' Github repository
 - `config_files`: `.yaml` configuration files used for each reproducibility test. Includes `config_mimic.yml` (**NEW**) for MIMIC-III.
 - `keyclass`: original KeyClass implementation with adaptations for multi-label support.
 - `mimic_preprocessing`: **NEW:** Scripts to pre-process the original MIMIC-III csv files into the required format.
-    - `00_generate_icd9_descriptors.py`: Generates keyword descriptors for ICD-9 categories (results already included in `config_mimic.yml`).
+    - `00_generate_icd9_descriptors.py`: Generates keyword descriptors for ICD-9 categories (results already included in `config_mimic_unfiltered.yml` and `config_mimic_filtered.yml`).
     - `01_create_admission_note_table.R`: R script to process raw MIMIC CSVs and generate intermediate files.
     - `02_generate_mimic_train_test_files.py`: Python script to convert intermediate files into `train.txt`, `test.txt`, `train_labels.txt`, `test_labels.txt` with multi-hot encoding for MIMIC.
     - `03_icd9_mimic_assigment_analysis.py`: Optional script for analyzing category distribution.
@@ -79,14 +79,36 @@ KeyClass pipeline requires the MIMIC-III dataset to be preprocessed before runni
 
 2.**Place Raw Files**: Copy the `DIAGNOSES_ICD.csv` and `NOTEEVENTS.csv` files from the MIMIC-III dataset into the `mimic_preprocessing/mimic_csv_files/` directory.
 
-3.**Run R Script**: Execute the R script to process the raw CSVs and create intermediate files. This script joins diagnoses with discharge summaries and categorizes ICD-9 codes.
+3.**Generate ICD-9 Descriptors (optional)**: The descriptors are already included in the `/config_files/config_mimic_unfiltered.yml` and `/config_files/config_mimic_filtered.yml`. However, if you want to manually generate them, run the following script:
+```shell
+cd mimic_preprocessing # Navigate to the preprocessing directory
+# This will output the top 30 keywords per ICD-9 top-level category and save the results to target_icd9_descriptors.txt
+uv run 00_generate_icd9_descriptors.py --num_keywords_per_cat 30 --output_file target_icd9_descriptors.txt 
+```
+The script also accepts filtering common keywords that are common in over % percentage of the categories.
+In the `config_mimic_filtered.yml` we use the top 30 keywords per category after removing common keywords that were shared in over 30% of the 19 categories. The list was generated with this command:
+```shell
+cd mimic_preprocessing # Navigate to the preprocessing directory
+uv run 00_generate_icd9_descriptors.py --num_keywords_per_cat 30 --shared_keyword_threshold 30 --output_file target_icd9_descriptors_filtered.txt
+```
+The main idea is to remove overly common words to facilitate distinction between top-level ICD-9 categories.
+
+3.**Run R Script**: Execute the R script to process the raw MIMIC-III CSV files (`DIAGNOSES_ICD.csv` and `NOTEEVENTS.csv`) and create intermediate files. The script filters discharge notes, extracts the associated ICD-9 codes, maps these codes to top-level categories, and splits the data into training and testing sets.
 ```shell
 cd mimic_preprocessing # Navigate to the preprocessing directory
 Rscript 01_create_admission_note_table.R
 ```
 This will generate `icd9NotesDataTable_train.csv` and `icd9NotesDataTable_test.csv` in the `mimic_preprocessing/intermediate_files/` directory.
 
-4.**Run Python Script**: Execute the Python script to convert the intermediate files into the final format required by the KeyClass pipeline (text files and multi-hot encoded labels).
+**Credit: Original script from the [FasTag](https://github.com/rivas-lab/FasTag/tree/master/src/textPreprocessing) Github repository [(Venkataraman et al. (2020)](https://doi.org/10.1371/journal.pone.0234647). Adapted for the current project.**
+
+4.**Data Analysis & Visualizations (optional)**: We provide an optional Jupyter notebook that explores the files generated on step 3. To start Jupyter/JupyterLab on the project folder, run the following command:
+```shell
+uv run --with jupyter jupyter lab
+```
+Open the web link on your browser and navigate to `/mimic_preprocessing/mimic_data_visualization.ipynb`.
+
+5.**Run Python Script**: Execute the Python script to convert the intermediate files into the final format required by the KeyClass pipeline (text files and multi-hot encoded labels).
 ```shell
 cd mimic_preprocessing # Navigate to the preprocessing directory
 uv run 02_generate_mimic_train_test_files.py
@@ -98,14 +120,13 @@ This will create the following files in the `mimic_preprocessing/output_mimic_fi
 - `test_labels.txt`: Multi-hot encoded labels for testing data.
 - `labels.txt`: Names of the 19 top-level ICD-9 categories.
 
-5.**Copy Output Files**: Copy the output files from the `mimic_preprocessing/output_mimic_files/` to `original_data/mimic` folder.
-
-6.**Generate ICD-9 Descriptors (optional)**: The descriptors are already included in the `/config_files/config_mimic.yml`. However, if you want to manually generate them, run the following script:
+6.**Copy Output Files**: Copy the output files from the `mimic_preprocessing/output_mimic_files/mimic` to `../original_data/mimic` folder.
 ```shell
-cd mimic_preprocessing # Navigate to the preprocessing directory
-uv run 00_generate_icd9_descriptors.py icd9_descriptions/CMS32_DESC_LONG_DX.txt --top_n 30 --output_file target_icd9_descriptors.txt 
+# Creates the destination folder if it does not exist
+mkdir -p ../original_data/mimic
+# Copies the generated files to the folder (will ask for confirmation if there are files in the destination)
+cp -ir output_mimic_files/mimic/* ../original_data/mimic/
 ```
-The output file will be `target_icd9_descriptors.txt`.
 
 # 3. Training
 
