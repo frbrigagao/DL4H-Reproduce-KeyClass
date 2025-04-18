@@ -1,0 +1,80 @@
+# DATASET CONFIGURATION
+dataset: mimic                          # MIMIC dataset
+data_path: ../original_data/            # Path to dataset
+n_classes: 19                           # Number of classes (paper mentions 19, p.10)
+max_num: 42000                          # Maximum samples per class to use
+problem_type: multi_label               # Multi-label classification problem for MIMIC
+
+# Class descriptions for MIMIC (ICD-9 categories)
+target_00: tuberculosis, found, bacilli, bacteriological, examination, tubercle, histological, sputum, microscopy, confirmed, infection, tuberculous, bacterial, done, unknown, present, culture
+target_01: neoplasm, malignant, lymph, nodes, benign, sites, cell, limb, site, lymphoma, hodgkin, skin, leukemia, carcinoma, disease, tumor, remission, upper
+target_02: type, diabetes, uncontrolled, disorders, deficiency, manifestations, stated, metabolism, mellitus, secondary, juvenile, goiter, disorder, vitamin, thyrotoxic, crisis
+target_03: anemia, disease, deficiency, cell, blood, anemias, thalassemia, hemolytic, sickle, crisis, congenital, neutropenia, iron, secondary, hereditary, induced
+target_04: disorder, type, episode, remission, dependence, schizophrenia, drug, abuse, bipolar, disorders, current, psychotic, episodic, manic, affective, recent
+target_05: migraine, intractable, status, migrainosus, elsewhere, classified, epilepsy, sleep, diseases, cerebral, stated, disorder, headache, aura, nerve, meningitis, syndrome
+target_06: eye, vision, impairment, disorders, retinal, corneal, glaucoma, associated, loss, ear, cataract, total, otitis, eyelid, disorder, body, visual
+target_07: disease, heart, infarction, artery, embolism, kidney, thrombosis, stage, failure, cerebrovascular, venous, episode, care, cerebral, late, effects
+target_08: pneumonia, respiratory, influenza, pulmonary, lung, virus, asthma, sinusitis, obstruction, bronchitis, diseases, elsewhere, classified, larynx, manifestations
+target_09: obstruction, hemorrhage, ulcer, perforation, hernia, gangrene, recurrent, intestine, cholecystitis, teeth, gastric, site, dental, gallbladder
+target_10: lesion, female, kidney, glomerulonephritis, genital, disorders, urinary, prostate, cervix, classified, elsewhere, renal, disorder, tract, urethral, breast
+target_11: condition, complication, antepartum, delivered, care, episode, applicable, postpartum, pregnancy, mother, abortion, labor, complicating, childbirth, puerperium, delivery, complicated
+target_12: dermatitis, ulcer, abscess, pressure, cellulitis, skin, contact, erythematous, condition, body, carbuncle, furuncle, eczema, exfoliation, involving, percent, surface
+target_13: region, arthropathy, joint, sites, associated, site, foot, hand, ankle, shoulder, upper, forearm, pelvic, thigh, arm, lower, leg, multiple
+target_14: congenital, anomalies, anomaly, cleft, complete, deficiency, incomplete, longitudinal, limb, system, syndrome, partial, stenosis, lip, atresia, palate, ear
+target_15: newborn, fetus, grams, fetal, affecting, dates, light, malnutrition, neonatal, respiratory, hemorrhage, maternal, birth, placenta, perinatal, breast
+target_16: open, fracture, injury, loss, wound, consciousness, closed, intracranial, degree, skull, body, hemorrhage, level, third, burn, poisoning, hours
+target_17: accident, injuring, vehicle, involving, motor, causing, effects, accidental, therapeutic, use, adverse, poisoning, injury, collision, occupant, traffic, inflicted
+target_18: history, personal, screening, malignant, examination, family, status, neoplasm, suspected, vaccination, prophylactic, need, aftercare, following, carrier, birth, born, multiple
+
+# ENCODER CONFIGURATION
+base_encoder: bionlp/bluebert_pubmed_mimic_uncased_L-12_H-768_A-12  # BlueBERT for clinical text (paper p.9)
+use_custom_encoder: true                # Uses BlueBERT instead of default encoder
+normalize_embeddings: false             # Whether to normalize embeddings
+
+# KEYWORD EXTRACTION
+topk: 100                               # Top-k labeling functions per class
+min_df: 0.001                           # Document frequency threshold (paper p.8)
+ngram_range: !!python/tuple             # Extract 1-3 grams as keywords
+- 1
+- 2
+
+# LABEL MODEL CONFIGURATION
+label_model: data_programming           # Using data programming
+label_model_lr: 0.01                    # Learning rate for label model
+label_model_n_epochs: 100               # Number of epochs for label model
+use_noise_aware_loss: true              # Using noise-aware loss for weak labels
+
+# DOWNSTREAM CLASSIFIER ARCHITECTURE
+h_sizes:                                # Neural network architecture (paper p.11)
+- 768                                   # Input size (BlueBERT embedding dimension)
+- 256                                   # Hidden layer 1
+- 64                                    # Hidden layer 2
+- 19                                    # Output layer (19 classes for MIMIC)
+activation: torch.nn.LeakyReLU()        # LeakyReLU activation (paper p.11)
+criterion: torch.nn.BCEWithLogitsLoss(reduction='none')  # Binary loss for multilabel classification (paper p.11)
+
+# DOWNSTREAM CLASSIFIER TRAINING
+end_model_batch_size: 128               # Batch size for training (paper p.11)
+end_model_epochs: 20                    # Maximum training epochs (paper p.11)
+end_model_lr: 1e-4                      # Learning rate (paper p.11)
+end_model_patience: 3                   # Early stopping patience (paper p.11)
+end_model_weight_decay: 1e-4            # Weight decay for regularization
+
+# SELF-TRAINING CONFIGURATION
+self_train_batch_size: 8                # Batch size for self-training
+self_train_lr: 1e-6                     # Learning rate for self-training
+self_train_patience: 3                  # Early stopping patience for self-training
+self_train_thresh: 1-2e-3               # Agreement threshold (1-0.002 = 0.998)
+self_train_weight_decay: 1e-4           # Weight decay for self-training
+q_update_interval: 50                   # Target distribution update frequency
+
+# EVALUATION CONFIGURATION
+average: samples                       # Type of averaging for metrics (paper footnote 4.)
+n_bootstrap: 100                        # Bootstrap samples for confidence intervals
+
+# INFRASTRUCTURE & LOGGING PARAMETERS
+device: cpu                            # Hardware accelerator to use
+n_jobs: 10                              # Number of parallel jobs
+show_progress_bar: true                 # Display progress during training
+log_path: ../logs/                      # Log file path
+results_path: ../results/mimic/         # Path for results
