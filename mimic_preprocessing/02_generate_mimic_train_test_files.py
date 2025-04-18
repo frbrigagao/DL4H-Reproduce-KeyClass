@@ -130,6 +130,8 @@ def process_split(data, output_dir, split_name, category_to_idx, max_note_length
     
     num_categories = len(category_to_idx)
     
+    num_records = 0
+
     for tokens, categories in data:
         # Truncate tokens to max_note_length
         tokens = tokens[:max_note_length]
@@ -147,15 +149,20 @@ def process_split(data, output_dir, split_name, category_to_idx, max_note_length
         # labels_file.write(' '.join(map(str, n_hot)) + '\n')
 
         labels_file.write(''.join(map(str, n_hot)) + '\n')
+
+        num_records = num_records + 1
     
     text_file.close()
     labels_file.close()
+
+    print(f"Wrote {num_records} records to {split_name}.txt and {split_name}_labels.txt")
+          
 
 if __name__ == "__main__":
     # Set paths
     data_train_path = "intermediate_files/icd9NotesDataTable_train.csv"
     data_test_path = "intermediate_files/icd9NotesDataTable_test.csv"
-    output_dir = "output_mimic_files"
+    output_dir = "output_mimic_files/mimic"
     
     # Check if paths exist
     if not os.path.exists(data_train_path):
@@ -171,5 +178,5 @@ if __name__ == "__main__":
         output_dir=output_dir,
         code_idx=8,  # Column with the top-level ICD9 Codes
         text_idx=6,  # Column with the text of the report
-        max_note_length=1000  # From Fastag's preprocessing steps
+        max_note_length=4000  # From Fastag's preprocessing steps
     )
