@@ -5,11 +5,11 @@ n_classes: 19                           # Number of classes (paper mentions 19, 
 max_num: 42000                          # Maximum samples per class to use
 problem_type: multi_label               # Multi-label classification problem for MIMIC
 
-# Class descriptions for MIMIC (ICD-9 categories)
+# Class descriptions for MIMIC (ICD-9 categories) - TOP 30 words per category (unfiltered)
 target_00: tuberculosis, found, unspecified, bacilli, bacteriological, examination, tubercle, histological, specified, sputum, microscopy, confirmed, infection, tuberculous, due, bacterial, done, unknown, present, culture, histologically, methods, inoculation, animals, acute, gonococcal, fever, hepatitis, viral, primary
 target_01: neoplasm, malignant, unspecified, lymph, nodes, benign, sites, cell, limb, site, lymphoma, hodgkin, skin, leukemia, specified, carcinoma, disease, tumor, remission, upper, lower, face, carcinoid, neck, situ, organ, uncertain, behavior, secondary, tissue
-target_02: unspecified, type, diabetes, uncontrolled, disorders, deficiency, manifestations, stated, metabolism, specified, mention, mellitus, secondary, ii, juvenile, without, goiter, disorder, vitamin, thyrotoxic, crisis, storm, syndrome, complication, acid, toxic, renal, gouty, hypothyroidism, thyroiditis
-target_03: anemia, unspecified, disease, deficiency, cell, blood, specified, anemias, thalassemia, hemolytic, sickle, crisis, congenital, neutropenia, iron, secondary, chronic, hereditary, due, induced, thrombocytopenia, without, hb, acquired, factor, disorder, hemorrhagic, purpura, white, beta
+target_02: unspecified, type, diabetes, uncontrolled, disorders, deficiency, manifestations, stated, metabolism, specified, mention, mellitus, secondary, juvenile, without, goiter, disorder, vitamin, thyrotoxic, crisis, storm, syndrome, complication, acid, toxic, renal, gouty, hypothyroidism, thyroiditis, chronic
+target_03: anemia, unspecified, disease, deficiency, cell, blood, specified, anemias, thalassemia, hemolytic, sickle, crisis, congenital, neutropenia, iron, secondary, chronic, hereditary, due, induced, thrombocytopenia, without, acquired, factor, disorder, hemorrhagic, purpura, white, beta, autoimmune
 target_04: disorder, unspecified, type, episode, remission, dependence, schizophrenia, drug, abuse, specified, bipolar, disorders, acute, current, chronic, psychotic, episodic, manic, affective, recent, depressive, continuous, subchronic, exacerbation, personality, conduct, mental, dementia, alcohol, severe
 target_05: migraine, without, unspecified, intractable, mention, status, migrainosus, elsewhere, classified, epilepsy, sleep, diseases, cerebral, stated, disorder, headache, aura, nerve, meningitis, syndrome, due, disorders, affecting, side, chronic, limb, disease, specified, hemiplegia, acute
 target_06: unspecified, eye, vision, impairment, disorders, retinal, corneal, glaucoma, acute, associated, loss, ear, cataract, chronic, total, otitis, eyelid, disorder, body, visual, optic, hearing, media, specified, better, lesser, detachment, retinopathy, stage, degeneration
@@ -36,7 +36,7 @@ topk: 100                               # Top-k labeling functions per class
 min_df: 0.001                           # Document frequency threshold (paper p.8)
 ngram_range: !!python/tuple             # Extract 1-3 grams as keywords
 - 1
-- 3
+- 1
 
 # LABEL MODEL CONFIGURATION
 label_model: data_programming           # Using data programming

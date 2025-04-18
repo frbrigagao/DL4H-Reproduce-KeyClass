@@ -5,7 +5,7 @@ n_classes: 19                           # Number of classes (paper mentions 19, 
 max_num: 42000                          # Maximum samples per class to use
 problem_type: multi_label               # Multi-label classification problem for MIMIC
 
-# Class descriptions for MIMIC (ICD-9 categories)
+# Class descriptions for MIMIC (ICD-9 categories) - TOP 30 words per category (removed keywords occuring in more than 30% of classes)
 target_00: tuberculosis, found, bacilli, bacteriological, examination, tubercle, histological, sputum, microscopy, confirmed, infection, tuberculous, bacterial, done, unknown, present, culture
 target_01: neoplasm, malignant, lymph, nodes, benign, sites, cell, limb, site, lymphoma, hodgkin, skin, leukemia, carcinoma, disease, tumor, remission, upper
 target_02: type, diabetes, uncontrolled, disorders, deficiency, manifestations, stated, metabolism, mellitus, secondary, juvenile, goiter, disorder, vitamin, thyrotoxic, crisis
@@ -36,7 +36,7 @@ topk: 100                               # Top-k labeling functions per class
 min_df: 0.001                           # Document frequency threshold (paper p.8)
 ngram_range: !!python/tuple             # Extract 1-3 grams as keywords
 - 1
-- 2
+- 1
 
 # LABEL MODEL CONFIGURATION
 label_model: data_programming           # Using data programming
@@ -56,8 +56,8 @@ criterion: torch.nn.BCEWithLogitsLoss(reduction='none')  # Binary loss for multi
 # DOWNSTREAM CLASSIFIER TRAINING
 end_model_batch_size: 128               # Batch size for training (paper p.11)
 end_model_epochs: 20                    # Maximum training epochs (paper p.11)
-end_model_lr: 1e-4                      # Learning rate (paper p.11)
-end_model_patience: 3                   # Early stopping patience (paper p.11)
+end_model_lr: 1e-3                      # Learning rate (paper p.11)
+end_model_patience: 2                   # Early stopping patience (paper p.11)
 end_model_weight_decay: 1e-4            # Weight decay for regularization
 
 # SELF-TRAINING CONFIGURATION
