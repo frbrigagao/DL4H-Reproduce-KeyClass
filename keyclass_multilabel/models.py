@@ -291,11 +291,7 @@ class FeedForwardFlexible(torch.nn.Module):
         self.layers = torch.nn.ModuleList()
         for k in range(len(h_sizes) - 1):
             self.layers.append(torch.nn.Linear(h_sizes[k], h_sizes[k + 1]))
-            # self.layers.append(activation)
-            # self.layers.append(torch.nn.Dropout(p=0.5))
-
             # --- CHANGE START ---
-            # TODO: check if this Gemini suggestion is in alignment with the paper.
             # Apply activation and dropout between hidden layers, but not after the final output layer
             if k < len(h_sizes) - 2:
                 self.layers.append(activation)
