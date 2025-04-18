@@ -42,7 +42,7 @@ def load_icd9_category_names():
     cat_id_to_name = {f"cat:{i+1}": name for i, name in enumerate(labels)}
     return cat_id_to_name
 
-def analyze_categories(data_train_path, data_valid_path, code_idx=9, output_path="category_analysis.csv"):
+def analyze_categories(data_train_path, data_valid_path, code_idx=8, output_path="category_analysis.csv"):
     """
     Analyze the distribution of ICD-9 categories across records, patients, and admissions.
     
@@ -99,7 +99,7 @@ def analyze_categories(data_train_path, data_valid_path, code_idx=9, output_path
                 has_categories = False
                 
                 # Get ICD-9 categories
-                if code_idx < len(row) and row[code_idx]:
+                if row[code_idx]:
                     categories = row[code_idx].split('-')
                     
                     for category in categories:
@@ -135,7 +135,6 @@ def analyze_categories(data_train_path, data_valid_path, code_idx=9, output_path
     print("\n============== RECORDS WITHOUT CATEGORIES ==============")
     if records_without_categories:
         print(f"Found {len(records_without_categories)} records without any assigned top-level ICD-9 categories")
-        print(f"This represents {(len(records_without_categories) / total_records) * 100:.2f}% of all records")
         
         # Save details of these records to a file
         pd.DataFrame(records_without_categories).to_csv('records_without_categories.csv', index=False)
@@ -163,6 +162,27 @@ def analyze_categories(data_train_path, data_valid_path, code_idx=9, output_path
             'Record Percentage': round(record_counts[category] / total_records * 100, 2),
             'Patient Percentage': round(len(patient_counts[category]) / len(all_patient_ids) * 100, 2),
             'Admission Percentage': round(len(admission_counts[category]) / len(all_admission_ids) * 100, 2)
+        })
+    # Append any records without categories
+    if len(records_without_categories) > 0:
+
+        # Count unique SUBJECT_IDs
+        unique_subject_ids_without_cat = {record['SUBJECT_ID'] for record in records_without_categories}
+        count_unique_subject_ids_without_cat = len(unique_subject_ids_without_cat)
+
+        # Count unique HADM_IDs
+        unique_hadm_ids_without_cat = {record['HADM_ID'] for record in records_without_categories}
+        count_unique_hadm_ids_without_cat = len(unique_hadm_ids_without_cat)
+
+        results.append({
+            'Category ID': "N/A",
+            'Category Name': "Records Without Assigned Categories",
+            'Record Count': len(records_without_categories),
+            'Patient Count': len(unique_subject_ids_without_cat),
+            'Admission Count': len(unique_hadm_ids_without_cat),
+            'Record Percentage': round(len(records_without_categories) / total_records * 100, 2),
+            'Patient Percentage': round(len(unique_subject_ids_without_cat) / len(all_patient_ids) * 100, 2),
+            'Admission Percentage': round(len(unique_hadm_ids_without_cat) / len(all_admission_ids) * 100, 2)
         })
     
     # Convert to DataFrame and save
@@ -223,80 +243,80 @@ def main():
         output_path=output_path
     )
     
-    # Create visualizations
-    try:
-        import matplotlib.pyplot as plt
-        import seaborn as sns
+    # # Create visualizations
+    # try:
+    #     import matplotlib.pyplot as plt
+    #     import seaborn as sns
         
-        # Set plot style
-        plt.style.use('ggplot')
-        sns.set(font_scale=1.2)
+    #     # Set plot style
+    #     plt.style.use('ggplot')
+    #     sns.set(font_scale=1.2)
         
-        # Create figure with four subplots (including overall stats)
-        fig, axes = plt.subplots(4, 1, figsize=(14, 24))
+    #     # Create figure with four subplots (including overall stats)
+    #     fig, axes = plt.subplots(4, 1, figsize=(14, 24))
         
-        # Plot overall statistics
-        overall_df = pd.DataFrame({
-            'Metric': ['Total Records', 'Unique Patients', 'Unique Admissions', 'Records Without Categories'],
-            'Count': [overall_stats['total_records'], 
-                     overall_stats['unique_patients'], 
-                     overall_stats['unique_admissions'],
-                     overall_stats['records_without_categories']]
-        })
+    #     # Plot overall statistics
+    #     overall_df = pd.DataFrame({
+    #         'Metric': ['Total Records', 'Unique Patients', 'Unique Admissions', 'Records Without Categories'],
+    #         'Count': [overall_stats['total_records'], 
+    #                  overall_stats['unique_patients'], 
+    #                  overall_stats['unique_admissions'],
+    #                  overall_stats['records_without_categories']]
+    #     })
         
-        sns.barplot(x='Count', y='Metric', data=overall_df, ax=axes[0], palette='Blues_d')
-        axes[0].set_title('Overall Dataset Statistics', fontsize=16)
-        axes[0].set_xlabel('Count')
-        axes[0].set_ylabel('')
+    #     sns.barplot(x='Count', y='Metric', data=overall_df, ax=axes[0], palette='Blues_d')
+    #     axes[0].set_title('Overall Dataset Statistics', fontsize=16)
+    #     axes[0].set_xlabel('Count')
+    #     axes[0].set_ylabel('')
         
-        for i, v in enumerate(overall_df['Count']):
-            axes[0].text(v + 0.1, i, f"{v:,}", va='center')
+    #     for i, v in enumerate(overall_df['Count']):
+    #         axes[0].text(v + 0.1, i, f"{v:,}", va='center')
         
-        # For visualization, create a custom order based on Category ID numeric value
-        df['Category Number'] = df['Category ID'].apply(lambda x: int(x.split(':')[1]))
+    #     # For visualization, create a custom order based on Category ID numeric value
+    #     df['Category Number'] = df['Category ID'].apply(lambda x: int(x.split(':')[1]))
         
-        # Plot record counts (in category order)
-        ordered_df = df.sort_values('Category Number')
-        sns.barplot(x='Record Count', y='Category Name', data=ordered_df, 
-                   ax=axes[1], palette='viridis')
-        axes[1].set_title('Number of Records per ICD-9 Category')
-        axes[1].set_xlabel('Record Count')
-        axes[1].set_ylabel('Category')
+    #     # Plot record counts (in category order)
+    #     ordered_df = df.sort_values('Category Number')
+    #     sns.barplot(x='Record Count', y='Category Name', data=ordered_df, 
+    #                ax=axes[1], palette='viridis')
+    #     axes[1].set_title('Number of Records per ICD-9 Category')
+    #     axes[1].set_xlabel('Record Count')
+    #     axes[1].set_ylabel('Category')
         
-        # Plot patient counts (in category order)
-        sns.barplot(x='Patient Count', y='Category Name', data=ordered_df, 
-                   ax=axes[2], palette='magma')
-        axes[2].set_title('Number of Patients per ICD-9 Category')
-        axes[2].set_xlabel('Patient Count')
-        axes[2].set_ylabel('Category')
+    #     # Plot patient counts (in category order)
+    #     sns.barplot(x='Patient Count', y='Category Name', data=ordered_df, 
+    #                ax=axes[2], palette='magma')
+    #     axes[2].set_title('Number of Patients per ICD-9 Category')
+    #     axes[2].set_xlabel('Patient Count')
+    #     axes[2].set_ylabel('Category')
         
-        # Plot admission counts (in category order)
-        sns.barplot(x='Admission Count', y='Category Name', data=ordered_df, 
-                   ax=axes[3], palette='plasma')
-        axes[3].set_title('Number of Admissions per ICD-9 Category')
-        axes[3].set_xlabel('Admission Count')
-        axes[3].set_ylabel('Category')
+    #     # Plot admission counts (in category order)
+    #     sns.barplot(x='Admission Count', y='Category Name', data=ordered_df, 
+    #                ax=axes[3], palette='plasma')
+    #     axes[3].set_title('Number of Admissions per ICD-9 Category')
+    #     axes[3].set_xlabel('Admission Count')
+    #     axes[3].set_ylabel('Category')
         
-        plt.tight_layout()
-        plt.savefig('stats/icd9_category_analysis.png', dpi=300, bbox_inches='tight')
-        print("Visualization saved to stats/icd9_category_analysis.png")
+    #     plt.tight_layout()
+    #     plt.savefig('stats/icd9_category_analysis.png', dpi=300, bbox_inches='tight')
+    #     print("Visualization saved to stats/icd9_category_analysis.png")
         
-        # Create an additional pie chart for records with/without categories
-        plt.figure(figsize=(10, 8))
-        labels = ['Records with categories', 'Records without categories']
-        sizes = [overall_stats['total_records'] - overall_stats['records_without_categories'], 
-                overall_stats['records_without_categories']]
-        colors = ['#66b3ff', '#ff9999']
+    #     # Create an additional pie chart for records with/without categories
+    #     plt.figure(figsize=(10, 8))
+    #     labels = ['Records with categories', 'Records without categories']
+    #     sizes = [overall_stats['total_records'] - overall_stats['records_without_categories'], 
+    #             overall_stats['records_without_categories']]
+    #     colors = ['#66b3ff', '#ff9999']
         
-        plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90, shadow=True)
-        plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
-        plt.title('Proportion of Records With/Without ICD-9 Categories', fontsize=16)
-        plt.tight_layout()
-        plt.savefig('stats/records_with_without_categories.png', dpi=300)
-        print("Category presence visualization saved to stats/records_with_without_categories.png")
+    #     plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90, shadow=True)
+    #     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
+    #     plt.title('Proportion of Records With/Without ICD-9 Categories', fontsize=16)
+    #     plt.tight_layout()
+    #     plt.savefig('stats/records_with_without_categories.png', dpi=300)
+    #     print("Category presence visualization saved to stats/records_with_without_categories.png")
         
-    except ImportError:
-        print("Matplotlib and/or seaborn not installed. Skipping visualization.")
+    # except ImportError:
+    #     print("Matplotlib and/or seaborn not installed. Skipping visualization.")
 
 if __name__ == "__main__":
     main()
