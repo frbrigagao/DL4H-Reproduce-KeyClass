@@ -103,18 +103,21 @@ for (i in 1:nrow(icd9NotesDataTable)){
   icd9ListLevel2 = c()
   icd9ListTop = c()
   for (icd9 in icd9row){
+    
+    # Initialize loop variables
+    icd9Top = NULL 
+
     icd9row = icd9row[icd9row!= ""]
     if (length(icd9row) == 0) {
       next
     }
-    else
-    {
-      if (substr(icd9, 1, 1) == "E"){  # External causes of injury
-        icd9Level2 = substr(icd9, 1, 4)
+    else {
+      if (substr(icd9, 1, 1) == "E"){
+      #  icd9Level2 = substr(icd9, 1, 4)
         icd9Top = "cat:18"
       }
-      else if (substr(icd9, 1,1) == "V"){ # Supplementary
-        icd9Level2 = substr(icd9, 1, 3)
+      else if (substr(icd9, 1,1) == "V"){
+      #  icd9Level2 = substr(icd9, 1, 3)
         icd9Top = "cat:19"
       }
       else {
@@ -164,17 +167,22 @@ for (i in 1:nrow(icd9NotesDataTable)){
         else if (icd9 >= 740 && icd9 <= 759){
           icd9Top = "cat:15"
         }
-        else if (icd9 >= 760 && icd9 <= 779){ # Perinatal period conditions
+        else if (icd9 >= 760 && icd9 <= 779){
           icd9Top = "cat:16"
-        }                                    
-        else if (icd9 >= 800 && icd9 <= 999){   # Injury and Poisoning , Paper skips (ic9-s 780-799)
-          icd9Top = "cat:17"                    
-        }                                       
+        }
+        else if (icd9 >= 800 && icd9 <= 999){
+          icd9Top = "cat:17"
+        }
       }
     }
-    icd9ListTop = c(icd9ListTop, icd9Top)
-    icd9ListLevel2 = c(icd9ListLevel2, icd9)
+    
+    if(!is.null(icd9Top)){
+        icd9ListTop = c(icd9ListTop, icd9Top)
     }
+    icd9ListLevel2 = c(icd9ListLevel2, icd9)
+    
+    
+  }
 
   # icd9NotesDataTable[i,7] = paste(unique(icd9ListLevel2), collapse = '-')
   # icd9NotesDataTable[i,8] = paste(unique(icd9ListTop), collapse = '-')
@@ -186,6 +194,23 @@ for (i in 1:nrow(icd9NotesDataTable)){
   #break;
 }
 
+##################################################################################
+# Filter out records that ended up with no assigned Top-Level ICD categories
+##################################################################################
+# Code commented. These records should appear in the final dataset with the multi-hot vector with all 0 (zeros).
+
+# print(paste("Rows before filtering empty TopLevelICD:", nrow(icd9NotesDataTable)))
+
+# # Keep only rows where TopLevelICD is NOT an empty string
+# icd9NotesDataTable <- icd9NotesDataTable %>%
+#   filter(TopLevelICD != "")
+
+# print(paste("Rows after filtering empty TopLevelICD:", nrow(icd9NotesDataTable)))
+
+# # Check if any rows remain - stop if not (optional but good practice)
+# if (nrow(icd9NotesDataTable) == 0) {
+#   stop("Error: No records remained after filtering for non-empty TopLevelICD. Check category assignment logic.")
+# }
 
 ##################################################################################
 # Split into Training and Validation
@@ -193,7 +218,7 @@ for (i in 1:nrow(icd9NotesDataTable)){
 # any admissions in train and test
 ##################################################################################
 set.seed(42)  # Added for reproducibility
-trainingFrac = 0.70 # According to paper 70/30 split for training/testing data.
+trainingFrac = 0.75 # According to original Fastag script (75/25 split). Same on Table 2 of Keyclass paper.
 
 trainingIdxs = sample.int(n = floor(nrow(icd9NotesDataTable)*trainingFrac), replace = FALSE)
 icd9NotesDataTable_train = icd9NotesDataTable[trainingIdxs,]
