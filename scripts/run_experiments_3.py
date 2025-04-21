@@ -133,7 +133,7 @@ def run_experiment(dataset, dataset_detail, learning_rate, batch_size, label_mod
         time.sleep(5)
         
         # Construct a glob pattern to find the experiment folder
-        pattern = f"{dataset}_{dataset_detail}_lr_{learning_rate}_b_{batch_size}_lf_{labeling_functions}_{lm_prefix}*"
+        pattern = f"{dataset}_{dataset_detail}_lr_{learning_rate}_b_{batch_size}_lf_{labeling_functions}_ngram_{ngram_desc}_{lm_prefix}_*"
         
         # Find experiment folders matching the pattern, created after start_time
         experiment_folders = glob.glob(os.path.join(results_base_dir, pattern))
