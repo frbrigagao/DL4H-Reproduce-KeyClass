@@ -15,6 +15,9 @@ sys.path.append('../keyclass/')
 import utils
 from dropbox_upload import upload_to_dropbox
 
+# Experiment results csv prefix to use (may be changed as needed)
+EXPERIMENT_CSV_PREFIX = 'experiment_results_4'
+
 # Define datasets
 
 DATASETS = ['mimic'] 
@@ -36,10 +39,13 @@ LABEL_MODELS = {
 LABELING_FUNCTIONS = {
     'mimic': [30, 40, 50, 80, 100, 150, 200, 250, 300],  
 }
+NGRAM_RANGE = {
+    'mimic': [(1,1), (1,2), (1,3)]
+}
 
 def find_latest_results_file():
     """Find the most recent experiment results file"""
-    result_files = glob.glob("../results_csv/experiment_results_3_*.csv")
+    result_files = glob.glob(f"../results_csv/{EXPERIMENT_CSV_PREFIX}_*.csv")
     if not result_files:
         return None
     
@@ -57,12 +63,13 @@ def check_log_for_memory_error(log_file):
             content = f.read()
             return ("Unable to allocate" in content or 
                     "_ArrayMemoryError" in content or
-                    "MemoryError" in content)
+                    "MemoryError" in content or 
+                    "")
     except Exception as e:
         print(f"Error checking log file for memory errors: {e}")
         return False
 
-def run_experiment(dataset, dataset_detail, learning_rate, batch_size, label_model, labeling_functions, use_wandb, keep_configs=False, skip_self_training = False):
+def run_experiment(dataset, dataset_detail, learning_rate, batch_size, label_model, labeling_functions, ngram_range, use_wandb, keep_configs=False, skip_self_training = False):
     """Run a single experiment with the given parameters"""
     try:
         # Load the base config using utils.Parser
@@ -73,7 +80,8 @@ def run_experiment(dataset, dataset_detail, learning_rate, batch_size, label_mod
         config['end_model_lr'] = learning_rate
         config['end_model_batch_size'] = batch_size
         config['label_model'] = label_model
-        ngmin, ngmax = config.get('ngram_range', (1, 1))
+        config['ngram_range'] = ngram_range
+        ngmin, ngmax = ngram_range
         ngram_desc = f"{ngmin}_{ngmax}"
         
         # Set number of labeling functions if provided
@@ -348,8 +356,6 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
             # Get parameters for this dataset
             default_params = get_default_parameters(dataset_detail, dataset)
             
-            ngmin, ngmax = default_params.get('ngram_range')
-            ngram_desc = f"({ngmin},{ngmax})"
 
             # Get available parameter options for this dataset
             
@@ -357,85 +363,89 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
             batch_size_options = BATCH_SIZES.get(dataset, [default_params['end_model_batch_size']])
             label_model_options = LABEL_MODELS.get(dataset, [default_params['label_model']])
             lf_options = LABELING_FUNCTIONS.get(dataset, [default_params['topk']])
+            ngram_options = NGRAM_RANGE.get(dataset, [default_params['ngram_range']])
             
             for lr in lr_options:
                 for batch_size in batch_size_options:
                     for label_model in label_model_options:
                         for lf_count in lf_options:
-                            # Create a unique experiment identifier for display
-                            exp_id = f"{dataset}_{lr}_{batch_size}_{label_model}_{lf_count}"
+                            for ngram in ngram_options:
+                                ngmin, ngmax = ngram
+                                ngram_desc = f"({ngmin},{ngmax})"
+                                # Create a unique experiment identifier for display
+                                exp_id = f"{dataset}_{dataset_detail}_lr_{lr}_b_{batch_size}_lf_{lf_count}_ngram_{ngram_desc}_{label_model}_*"
 
-                            # Default behavior is to also execute the self-training run
-                            skip_self_training = False
-                            
-                            # Check if this experiment has already been run by checking the DataFrame
-                            experiment_mask = ((results['dataset'] == dataset) & 
-                                               (results['config'] == dataset_detail) &
-                                            (results['learning_rate'] == float(lr)) &  # Compare as float
-                                            (results['batch_size'] == batch_size) & 
-                                            (results['label_model'] == label_model) &
-                                            (results['labeling_functions'] == lf_count) &
-                                            (results['ngram_range'] == ngram_desc)
-                                            )
-                            
-                            # Skip if already run
-                            if experiment_mask.any():
-                                print(f"Skipping already completed experiment: {exp_id}")
-                                continue
-                            
-                            print(f"\n=== Running experiment: dataset={dataset}, config={dataset_detail}, lr={lr}, batch_size={batch_size}, label_model={label_model}, lf_count={lf_count}, ngram_range={ngram_desc} ===\n")
-                            if skip_self_training:
-                                print(f"\n=== Experiment will SKIP self-training ===\n")
-                            
-                            # Run experiment
-                            experiment_info = run_experiment(dataset, dataset_detail, lr, batch_size, label_model, lf_count, use_wandb, keep_configs, skip_self_training)
+                                # Default behavior is to also execute the self-training run
+                                skip_self_training = False
+                                
+                                # Check if this experiment has already been run by checking the DataFrame
+                                experiment_mask = ((results['dataset'] == dataset) & 
+                                                (results['config'] == dataset_detail) &
+                                                (results['learning_rate'] == float(lr)) &  # Compare as float
+                                                (results['batch_size'] == batch_size) & 
+                                                (results['label_model'] == label_model) &
+                                                (results['labeling_functions'] == lf_count) &
+                                                (results['ngram_range'] == ngram_desc)
+                                                )
+                                
+                                # Skip if already run
+                                if experiment_mask.any():
+                                    print(f"Skipping already completed experiment: {exp_id}")
+                                    continue
+                                
+                                print(f"\n=== Running experiment: dataset={dataset}, config={dataset_detail}, lr={lr}, batch_size={batch_size}, label_model={label_model}, lf_count={lf_count}, ngram_range={ngram_desc} ===\n")
+                                if skip_self_training:
+                                    print(f"\n=== Experiment will SKIP self-training ===\n")
+                                
+                                # Run experiment
+                                experiment_info = run_experiment(dataset, dataset_detail, lr, batch_size, label_model, lf_count, ngram, use_wandb, keep_configs, skip_self_training)
 
-                            if experiment_info:
-                                # Extract metrics
-                                metrics = extract_metrics(experiment_info['results_folder'], skip_self_training)
-                                
-                                # Add to results DataFrame
-                                result = pd.DataFrame([{
-                                    'dataset': dataset,
-                                    'config': dataset_detail,
-                                    'log_file': experiment_info['log_file'],
-                                    'learning_rate': float(lr),  # Store as float
-                                    'batch_size': batch_size,
-                                    'label_model': label_model,
-                                    'labeling_functions': lf_count,
-                                    'ngram_range': ngram_desc,
-                                    'label_model_F1': metrics.get('label_model_F1', None),
-                                    'end_model_F1': metrics.get('end_model_F1', None),
-                                    'end_model_F1_std': metrics.get('end_model_F1_std', None),
-                                    'end_model_precision': metrics.get('end_model_precision', None),
-                                    'end_model_precision_std': metrics.get('end_model_precision_std', None),
-                                    'end_model_recall': metrics.get('end_model_recall', None),
-                                    'end_model_recall_std': metrics.get('end_model_recall_std', None),
-                                    'self_trained_end_model_F1': metrics.get('self_trained_F1', None),
-                                    'self_trained_end_model_F1_std': metrics.get('self_trained_F1_std', None),
-                                    'self_trained_end_model_precision': metrics.get('self_trained_precision', None),
-                                    'self_trained_end_model_precision_std': metrics.get('self_trained_precision_std', None),
-                                    'self_trained_end_model_recall': metrics.get('self_trained_recall', None),
-                                    'self_trained_end_model_recall_std': metrics.get('self_trained_recall_std', None)
-                                }])
-                                
-                                results = pd.concat([results, result], ignore_index=True)
-                                
-                                # Save intermediate results
-                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                                results_csv_path = f"../results_csv/experiment_results_3_{timestamp}.csv"
-                                results.to_csv(results_csv_path, index=False)
-                                
-                                print(f"Updated results table. Current shape: {results.shape}")
-                                
-                                # Upload experiment files to Dropbox
-                                upload_experiment_files(experiment_info, results_csv_path)
-                            else:
-                                print(f"Experiment failed or could not find results folder for {exp_id}. Moving to next experiment.")
+                                if experiment_info:
+                                    # Extract metrics
+                                    metrics = extract_metrics(experiment_info['results_folder'], skip_self_training)
+                                    
+                                    # Add to results DataFrame
+                                    result = pd.DataFrame([{
+                                        'dataset': dataset,
+                                        'config': dataset_detail,
+                                        'log_file': experiment_info['log_file'],
+                                        'learning_rate': float(lr),  # Store as float
+                                        'batch_size': batch_size,
+                                        'label_model': label_model,
+                                        'labeling_functions': lf_count,
+                                        'ngram_range': ngram_desc,
+                                        'label_model_F1': metrics.get('label_model_F1', None),
+                                        'end_model_F1': metrics.get('end_model_F1', None),
+                                        'end_model_F1_std': metrics.get('end_model_F1_std', None),
+                                        'end_model_precision': metrics.get('end_model_precision', None),
+                                        'end_model_precision_std': metrics.get('end_model_precision_std', None),
+                                        'end_model_recall': metrics.get('end_model_recall', None),
+                                        'end_model_recall_std': metrics.get('end_model_recall_std', None),
+                                        'self_trained_end_model_F1': metrics.get('self_trained_F1', None),
+                                        'self_trained_end_model_F1_std': metrics.get('self_trained_F1_std', None),
+                                        'self_trained_end_model_precision': metrics.get('self_trained_precision', None),
+                                        'self_trained_end_model_precision_std': metrics.get('self_trained_precision_std', None),
+                                        'self_trained_end_model_recall': metrics.get('self_trained_recall', None),
+                                        'self_trained_end_model_recall_std': metrics.get('self_trained_recall_std', None)
+                                    }])
+                                    
+                                    results = pd.concat([results, result], ignore_index=True)
+                                    
+                                    # Save intermediate results
+                                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                    results_csv_path = f"../results_csv/{EXPERIMENT_CSV_PREFIX}_{timestamp}.csv"
+                                    results.to_csv(results_csv_path, index=False)
+                                    
+                                    print(f"Updated results table. Current shape: {results.shape}")
+                                    
+                                    # Upload experiment files to Dropbox
+                                    upload_experiment_files(experiment_info, results_csv_path)
+                                else:
+                                    print(f"Experiment failed or could not find results folder for {exp_id}. Moving to next experiment.")
         
     # Save final results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    final_results_path = f"../results_csv/experiment_results_3_final_{timestamp}.csv"
+    final_results_path = f"../results_csv/{EXPERIMENT_CSV_PREFIX}_final_{timestamp}.csv"
     results.to_csv(final_results_path, index=False)
     print(f"Saved final results to {final_results_path}")
     
