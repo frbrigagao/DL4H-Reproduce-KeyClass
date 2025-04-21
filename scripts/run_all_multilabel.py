@@ -28,6 +28,7 @@ sys.path.append('../keyclass_multilabel/')
 import utils
 import wandb
 from datetime import datetime
+import torch 
 
 if __name__ == "__main__":
     parser_cmd = argparse.ArgumentParser()
@@ -146,7 +147,15 @@ if __name__ == "__main__":
     encode_datasets_multilabel.run(args_cmd, use_wandb, run, experiment_name)
 
     print("Labeling Data")
-    label_data_multilabel.run(args_cmd, use_wandb, run, experiment_name)
+    try:
+        label_data_multilabel.run(args_cmd, use_wandb, run, experiment_name)
+    except torch.cuda.OutOfMemoryError as e:
+        print(f"ERROR: CUDA Out of Memory during Label Model training!")
+        print(e)
+        if use_wandb and run:
+            run.log({"status": "failed", "error": f"CUDA out of memory error during label model training: {e}"})
+            run.finish(exit_code=1)
+        sys.exit(1)  
 
     print("Training Model")
     results = train_downstream_model_multilabel.train(args_cmd, use_wandb, run, experiment_name, skip_self_training)
