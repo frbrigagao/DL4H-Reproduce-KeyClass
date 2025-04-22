@@ -54,7 +54,7 @@ LABELING_FUNCTIONS = {
 
 def find_latest_results_file():
     """Find the most recent experiment results file"""
-    result_files = glob.glob(f"../results/{EXPERIMENT_CSV_PREFIX}_*.csv")
+    result_files = glob.glob(f"../results_csv/{EXPERIMENT_CSV_PREFIX}_*.csv")
     if not result_files:
         return None
     
@@ -426,7 +426,7 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
                             
                             # Save intermediate results
                             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                            results_csv_path = f"../results/{EXPERIMENT_CSV_PREFIX}_{timestamp}.csv"
+                            results_csv_path = f"../results_csv/{EXPERIMENT_CSV_PREFIX}_{timestamp}.csv"
                             results.to_csv(results_csv_path, index=False)
                             
                             print(f"Updated results table. Current shape: {results.shape}")
@@ -438,7 +438,7 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
         
     # Save final results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    final_results_path = f"../results/{EXPERIMENT_CSV_PREFIX}_final_{timestamp}.csv"
+    final_results_path = f"../results_csv/{EXPERIMENT_CSV_PREFIX}_final_{timestamp}.csv"
     results.to_csv(final_results_path, index=False)
     print(f"Saved final results to {final_results_path}")
     
@@ -459,6 +459,8 @@ if __name__ == "__main__":
     
     # Make sure the results directory exists
     os.makedirs("../results", exist_ok=True)
+    # Make sure the results_csv directory exists
+    os.makedirs("../results_csv", exist_ok=True)
     
     print(f"Running all experiments with use_wandb={args.use_wandb}, keep_configs={args.keep_configs}")
     results = run_all_experiments(use_wandb=args.use_wandb, keep_configs=args.keep_configs)
