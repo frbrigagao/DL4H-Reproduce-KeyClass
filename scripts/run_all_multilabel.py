@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # Get current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H-%M-%S")
-    target_descriptions = 'filtered' if 'filtered' in args_cmd.config else 'unfiltered'
+    target_descriptions = 'unfiltered' if 'unfiltered' in args_cmd.config else 'filtered'
     ngram_desc = f"{args['ngram_range'][0]}_{args['ngram_range'][1]}"
 
     # Define the experiment name
