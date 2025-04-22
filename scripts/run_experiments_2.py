@@ -15,6 +15,9 @@ sys.path.append('../keyclass/')
 import utils
 from dropbox_upload import upload_to_dropbox
 
+# Experiment results csv prefix to use (may be changed as needed)
+EXPERIMENT_CSV_PREFIX = 'experiment_results_2'
+
 # Define datasets
 #DATASETS = ['imdb', 'agnews', 'dbpedia', 'amazon']
 
@@ -51,7 +54,7 @@ LABELING_FUNCTIONS = {
 
 def find_latest_results_file():
     """Find the most recent experiment results file"""
-    result_files = glob.glob("../results/experiment_results_2_*.csv")
+    result_files = glob.glob(f"../results/{EXPERIMENT_CSV_PREFIX}_*.csv")
     if not result_files:
         return None
     
@@ -423,7 +426,7 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
                             
                             # Save intermediate results
                             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                            results_csv_path = f"../results/experiment_results_2_{timestamp}.csv"
+                            results_csv_path = f"../results/{EXPERIMENT_CSV_PREFIX}_{timestamp}.csv"
                             results.to_csv(results_csv_path, index=False)
                             
                             print(f"Updated results table. Current shape: {results.shape}")
@@ -435,7 +438,7 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
         
     # Save final results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    final_results_path = f"../results/experiment_results_2_final_{timestamp}.csv"
+    final_results_path = f"../results/{EXPERIMENT_CSV_PREFIX}_final_{timestamp}.csv"
     results.to_csv(final_results_path, index=False)
     print(f"Saved final results to {final_results_path}")
     
