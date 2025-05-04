@@ -71,7 +71,7 @@ The original code for the paper was obtained from the authors' Github repository
 
 The project utilized multiple Linux machines depending on the dataset, as listed below.
 
-![Hardware](/assets/00_hardware_configs.png)
+<img src="assets/00_hardware_configs.png" alt="Hardware" height="150"/>
 
 Most experiments will be able to run on a 32-core CPU, an RTX 4090 GPU 24GB, and at least 128GB of RAM.
 
@@ -108,11 +108,13 @@ cd scripts # Must be in the scripts folder
 uv run get_data.py
 ``` 
 
-The script will ask for confirmation before dowloading each file. **Atention**: this script will **not** provide the MIMIC-3 dataset.
+The script will ask for confirmation before dowloading each file. 
+
+**Attention**: this script will **not** provide the MIMIC-3 dataset.
 
 ## 2.4 MIMIC-3 Dataset Preprocessing
 
-KeyClass requires the MIMIC-III dataset to be preprocessed before running experiments using config_mimic.yml.
+KeyClass requires specific files from the MIMIC-III database to be preprocessed into a custom dataset before running experiments.
 
 **Steps:**
 
@@ -220,16 +222,16 @@ uv run run_all_multilabel.py --config ../config_files/config_mimic_unfiltered_de
 The scripts will create a **unique experiment name** for the training run, that will be shown at the start.
 
 Generated files will be inside the folder `/results/[dataset]/[experimentname]`:
-    - `/data_embeddings`: Embedded dataset files.
-    - `/metrics/`: Metrics for the models.
-        - `train_label_model_with_ground_truth.txt`: Metrics for label model.
-        - `test_end_model_with_ground_truth.txt`: Metrics for downstream classifier model.
-        - `test_end_model_with_ground_truth_self_trained.txt`: Metrics for downstream self-trained model.
-        - `test_end_model_with_ground_truth_category_specific_by_category.json`: Category-specific F1 scores (only for MIMIC).
-    - `/models`: Generated models (downstream classifier and self-trained model).
-    - `/predictions`: Pickle files with the models' predictions.
+- `/data_embeddings`: Embedded dataset files.
+- `/metrics/`: Metrics for the models.
+    - `train_label_model_with_ground_truth.txt`: Metrics for label model.
+    - `test_end_model_with_ground_truth.txt`: Metrics for downstream classifier model.
+    - `test_end_model_with_ground_truth_self_trained.txt`: Metrics for downstream self-trained model.
+    - `test_end_model_with_ground_truth_category_specific_by_category.json`: Category-specific F1 scores (only for MIMIC).
+- `/models`: Generated models (downstream classifier and self-trained model).
+- `/predictions`: Pickle files with the models' predictions.
 
-Log file for the training run will be saved at `/logs/[experimentname].log`.
+The log file for the training run will be saved at `/logs/[experimentname].log`.
 
 # 4. Running Multiple Training Runs with Different Hyperparamaters
 
@@ -237,7 +239,7 @@ To facilitate **executing multiple training runs automatically** with **differen
 - `run_experiments.py`: Executes training runs for benchmark datasets (single-label).
 - `run_experiments_multilabel.py`: Executes training runs for MIMIC dataset (multi-label).
 
-At the start of scripts you can configure the following variables:
+Modify the following variables at the start of each script:
 - `EXPERIMENT_CSV_PREFIX`: Prefix of the CSV filename that will store the results.
 - `DATASETS`: Array with the list of datasets to be tested.
 - `LEARNING RATE`: Array with the end model learning rates to be tested per dataset.
@@ -251,7 +253,7 @@ Additionally, you can pass the following optional command-line parameters:
 - `--use_wandb`: If you want to use Weights & Biases to log each experiment.
 - `--keep_configs`: If you want to keep the temporary `.yml` configuration file generated for each experiment.
     - These will be stored in the `/config_files` folder with the structure `temp_config_[experimentname].yml`.
-- `--use_dropbox`: If you want to upload the files to Dropbox after each experiment.
+- `--use_dropbox`: If you want to upload the resulting files to Dropbox after each experiment.
     - Please add your credentials in `dropbox_upload.py` if you want to use this feature.
 
 Example:
@@ -272,8 +274,8 @@ uv run run_experiments_multilabel.py --use_wandb --keep_configs --use_dropbox
 # 5. Evaluation
 
 The paper used the following evalution metrics:
- - Benchmark Datasets: Accuracy, precision, and recall.
- - MIMIC-derived Dataset: Aggregate F1 Score, precision, and recall.
+ - **Benchmark Datasets**: Accuracy, precision, and recall.
+ - **MIMIC-derived Dataset**: Aggregate F1 Score, precision, and recall.
 
 Model evaluation is performed **automatically at the end of each training run** in `run_all.py` or `run_all_multilabel.py`.
 
@@ -287,14 +289,13 @@ You can download the original KeyClass pretrained models **for the benchmark dat
 
 ## 6.2 Our Pre-Trained Models (Reproducibility Study)
 
-This reproducibility study performed a total of 139 experiments for the five datasets.
-All files generated by each training run, including the generated models, are available at our [Dropbox folder](https://www.dropbox.com/scl/fo/7xpliie7wpnqc677t2cwa/AK4IGXkCmLn-1UTFUWHSHpQ?rlkey=sq7ytrn04k2p953gj29hi771g&st=g9jhwp98&dl=0).
+Files generated by each training run, including the models, are available at our [Dropbox folder](https://www.dropbox.com/scl/fo/7xpliie7wpnqc677t2cwa/AK4IGXkCmLn-1UTFUWHSHpQ?rlkey=sq7ytrn04k2p953gj29hi771g&st=g9jhwp98&dl=0).
 
 # 7. Results (Reproducibility Study)
 
 This reproducibility study performed a total of 139 experiments for the five datasets.
 
-All files generated by each training run, including the evaluation metrics, are available at our [Dropbox folder](https://www.dropbox.com/scl/fo/7xpliie7wpnqc677t2cwa/AK4IGXkCmLn-1UTFUWHSHpQ?rlkey=sq7ytrn04k2p953gj29hi771g&st=g9jhwp98&dl=0).
+Files generated by each training run, including evaluation metrics, are available at our [Dropbox folder](https://www.dropbox.com/scl/fo/7xpliie7wpnqc677t2cwa/AK4IGXkCmLn-1UTFUWHSHpQ?rlkey=sq7ytrn04k2p953gj29hi771g&st=g9jhwp98&dl=0).
 
 We also provide a compilation of all experiments data and results, including evaluation metrics, in the `experiment_summary.csv` file and this [Google Sheet](https://docs.google.com/spreadsheets/d/1eHx2QmqcPsGohQ6mkNt-vAasfkkUmOfar1KnJM2FNjc/edit?usp=sharing).
 
@@ -304,18 +305,22 @@ In addition, all training runs were logged and are available at [Weights & Biase
 
 ### 7.1.1 Datasets
 
-![Datasets](/assets/00_datasets.png)
+<img src="assets/00_datasets.png" alt="Datasets" height="250"/>
+
 Dataset Statistics from Gao et al. (2022). Models were trained on the training set, but do not have access to labels. Unlike other datasets, MIMIC is a multi-label classification task where each clinical note is assigned to all relevant categories. All datasets, except MIMIC, are balanced.
 
 ### 7.1.2 Computational Requirements
 
-![Hardware](/assets/00_hardware_configs.png)
+<img src="assets/00_hardware_configs.png" alt="Hardware" height="150"/>
+
 Hardware Configurations and Number of Completed Experiments per Configuration.
 
-![Compute_Hours](/assets/00_total_experiments.png)
+<img src="assets/00_total_experiments.png" alt="Compute_Hours" height="150"/>
+
 Compute Hours and Experiment Status per Dataset.
 
-![Epochs](/assets/00_average_runtime_per_epoch.png)
+<img src="assets/00_average_runtime_per_epoch.png" alt="Epochs" height="150"/>
+
 Training Epochs (label model, downstream classifier and self-trained model) and Average Runtime.
 
 ## 7.2 Results - Benchmark Datasets (Single-Label)
@@ -339,7 +344,7 @@ Overall, results were largely reproducible for AGNews and IMDb, with some discre
 
 ## 7.3 Results - MIMIC-derived Dataset (Multi-Label)
 
-![Results](/assets/02_mimic_results.png)
+<img src="assets/02_mimic_results.png" alt="Results" height="120"/>
 
 Reproducing the MIMIC-derived dataset results required adapting the source code for multi-label classification and inferring missing hyperparameters. The table below compares the best results achieved in this study with the paper's Table 3.
 
@@ -395,7 +400,7 @@ Experiments were conducted varying the downstream model learning rate (LR) (`1e-
 
 Experiments were run with an end model learning rate of `1e-3`, batch size of `128` (the paper's default), and a varying number of labeling functions (LFs): `15`, `30`, `50`, `100`, `250`, and `300`.
 
-![Results](/assets/04_ablation2_results.png)
+<img src="assets/04_ablation2_results.png" alt="Results" height="300"/>
 
 **Data Programming**  
   - Accuracy initially improved significantly, peaking at `0.941 ± 0.001` with `30` LFs (up from `0.772` at `15` LFs), closely matching the paper's Table 5 score of `0.940 ± 0.001`.  
