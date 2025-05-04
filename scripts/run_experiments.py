@@ -16,39 +16,37 @@ import utils
 from dropbox_upload import upload_to_dropbox
 
 # Experiment results csv prefix to use (may be changed as needed)
-EXPERIMENT_CSV_PREFIX = 'experiment_results_2'
+EXPERIMENT_CSV_PREFIX = 'experiment_results_single_label'
 
 # Define datasets
-#DATASETS = ['imdb', 'agnews', 'dbpedia', 'amazon']
-
-DATASETS = ['agnews', 'amazon', 'dbpedia'] # Skipping imdb and putting dbpedia last
+DATASETS = ['imdb', 'agnews', 'dbpedia', 'amazon']
 
 # Define dataset-specific parameter combinations
 LEARNING_RATES = {
- #   'imdb': ['1e-3', '1e-4'],
+    'imdb': ['1e-3', '1e-4'],
     'agnews': ['1e-3', '1e-4'],
-    'dbpedia': ['1e-3'], # Will only test default learning rate of 1e-3 due to time/hw constraints
+    'dbpedia': ['1e-3', '1e-4'],
     'amazon': ['1e-3', '1e-4']
 }
 
 BATCH_SIZES = {
-  #  'imdb': [128, 64, 32],
+    'imdb': [128, 64, 32],
     'agnews': [128, 64, 32],
-    'dbpedia': [128], # Will only test default batch size due to time/hw contraints
+    'dbpedia': [128, 64, 32],
     'amazon': [128, 64, 32]
 }
 
 LABEL_MODELS = {
-#    'imdb': ['data_programming', 'majority_vote'],
+    'imdb': ['data_programming', 'majority_vote'],
     'agnews': ['data_programming', 'majority_vote'],
     'dbpedia': ['data_programming', 'majority_vote'],
     'amazon': ['data_programming', 'majority_vote']
 }
 
 LABELING_FUNCTIONS = {
- #   'imdb': [50, 100, 200, 300],
+    'imdb': [300], # Default number of LFs
     'agnews': [300], # Default number of LFs
-    'dbpedia': [30, 50, 100, 250, 300],  # 15 is already being tested by first script
+    'dbpedia': [15, 30, 50, 100, 250, 300], # 15 Default number of LFs, Others for ablation
     'amazon': [300] # Default number of LFs
 }
 
@@ -315,7 +313,7 @@ def get_default_parameters(dataset):
         'label_model': config['label_model']
     }
 
-def run_all_experiments(use_wandb=False, keep_configs=False):
+def run_all_experiments(use_wandb=False, keep_configs=False, use_dropbox=False):
     """Run all experiments and collect results"""
     
     # Initialize results DataFrame with empty data and include std columns
@@ -431,8 +429,9 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
                             
                             print(f"Updated results table. Current shape: {results.shape}")
                             
-                            # Upload experiment files to Dropbox
-                            upload_experiment_files(experiment_info, results_csv_path)
+                            # Upload experiment files to Dropbox if selected
+                            if use_dropbox:
+                                upload_experiment_files(experiment_info, results_csv_path)
                         else:
                             print(f"Experiment failed or could not find results folder for {exp_id}. Moving to next experiment.")
         
@@ -442,12 +441,13 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
     results.to_csv(final_results_path, index=False)
     print(f"Saved final results to {final_results_path}")
     
-    # Upload final results to Dropbox
-    result = upload_to_dropbox(path=final_results_path, dest_path='/results_csv', is_file=True)
-    if result != 0:
-        print(f"ERROR: Failed to upload final results CSV to Dropbox (error code {result})")
-    else:
-        print("Successfully uploaded final results CSV to Dropbox")
+    # Upload final results to Dropbox if selected
+    if use_dropbox:
+        result = upload_to_dropbox(path=final_results_path, dest_path='/results_csv', is_file=True)
+        if result != 0:
+            print(f"ERROR: Failed to upload final results CSV to Dropbox (error code {result})")
+        else:
+            print("Successfully uploaded final results CSV to Dropbox")
     
     return results
 
@@ -455,6 +455,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run KeyClass experiments with different hyperparameters')
     parser.add_argument('--use_wandb', action='store_true', default=False, help='Use Weights & Biases for experiment tracking')
     parser.add_argument('--keep_configs', action='store_true', default=False, help='Keep temporary config files after experiments')
+    parser.add_argument('--use_dropbox', action='store_true', default=False, help='Uploads files to dropbox.')
     args = parser.parse_args()
     
     # Make sure the results directory exists
@@ -462,8 +463,8 @@ if __name__ == "__main__":
     # Make sure the results_csv directory exists
     os.makedirs("../results_csv", exist_ok=True)
     
-    print(f"Running all experiments with use_wandb={args.use_wandb}, keep_configs={args.keep_configs}")
-    results = run_all_experiments(use_wandb=args.use_wandb, keep_configs=args.keep_configs)
+    print(f"Running all experiments with use_wandb={args.use_wandb}, keep_configs={args.keep_configs}, use_dropbox={args.use_dropbox}")
+    results = run_all_experiments(use_wandb=args.use_wandb, keep_configs=args.keep_configs, use_dropbox=args.use_dropbox)
     
     # Display summary
     print("\n=== Experiment Results Summary ===")

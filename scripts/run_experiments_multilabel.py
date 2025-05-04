@@ -16,7 +16,7 @@ import utils
 from dropbox_upload import upload_to_dropbox
 
 # Experiment results csv prefix to use (may be changed as needed)
-EXPERIMENT_CSV_PREFIX = 'experiment_results_4'
+EXPERIMENT_CSV_PREFIX = 'experiment_results_mimic'
 
 # Define datasets
 
@@ -311,7 +311,7 @@ def get_default_parameters(config, dataset):
         'ngram_range': tuple(config.get('ngram_range', (1, 1)))
     }
 
-def run_all_experiments(use_wandb=False, keep_configs=False):
+def run_all_experiments(use_wandb=False, keep_configs=False, use_dropbox=False):
     """Run all experiments and collect results"""
     
     # Initialize results DataFrame with empty data and include std columns
@@ -438,8 +438,9 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
                                     
                                     print(f"Updated results table. Current shape: {results.shape}")
                                     
-                                    # Upload experiment files to Dropbox
-                                    upload_experiment_files(experiment_info, results_csv_path)
+                                    # Upload experiment files to Dropbox if selected
+                                    if use_dropbox:
+                                        upload_experiment_files(experiment_info, results_csv_path)
                                 else:
                                     print(f"Experiment failed or could not find results folder for {exp_id}. Moving to next experiment.")
         
@@ -449,12 +450,13 @@ def run_all_experiments(use_wandb=False, keep_configs=False):
     results.to_csv(final_results_path, index=False)
     print(f"Saved final results to {final_results_path}")
     
-    # Upload final results to Dropbox
-    result = upload_to_dropbox(path=final_results_path, dest_path='/results_csv', is_file=True)
-    if result != 0:
-        print(f"ERROR: Failed to upload final results CSV to Dropbox (error code {result})")
-    else:
-        print("Successfully uploaded final results CSV to Dropbox")
+    # Upload final results to Dropbox if selected
+    if use_dropbox:
+        result = upload_to_dropbox(path=final_results_path, dest_path='/results_csv', is_file=True)
+        if result != 0:
+            print(f"ERROR: Failed to upload final results CSV to Dropbox (error code {result})")
+        else:
+            print("Successfully uploaded final results CSV to Dropbox")
     
     return results
 
@@ -462,6 +464,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run KeyClass experiments with different hyperparameters for MIMIC dataset')
     parser.add_argument('--use_wandb', action='store_true', default=False, help='Use Weights & Biases for experiment tracking')
     parser.add_argument('--keep_configs', action='store_true', default=False, help='Keep temporary config files after experiments')
+    parser.add_argument('--use_dropbox', action='store_true', default=False, help='Uploads files to dropbox.')
     args = parser.parse_args()
     
     # Make sure the results directory exists
@@ -469,8 +472,8 @@ if __name__ == "__main__":
     # Make sure the results_csv directory exists
     os.makedirs("../results_csv", exist_ok=True)
     
-    print(f"Running all experiments with use_wandb={args.use_wandb}, keep_configs={args.keep_configs}")
-    results = run_all_experiments(use_wandb=args.use_wandb, keep_configs=args.keep_configs)
+    print(f"Running all experiments with use_wandb={args.use_wandb}, keep_configs={args.keep_configs}, use_dropbox={args.use_dropbox}")
+    results = run_all_experiments(use_wandb=args.use_wandb, keep_configs=args.keep_configs, use_dropbox=args.use_dropbox)
     
     # Display summary
     print("\n=== Experiment Results Summary ===")
