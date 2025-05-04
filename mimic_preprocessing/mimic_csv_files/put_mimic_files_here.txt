@@ -1,0 +1,3 @@
+Put the following files from the MIMIC-III database in this folder: 
+- NOTEEVENTS.csv
+- DIAGNOSES_ICD.csv 
