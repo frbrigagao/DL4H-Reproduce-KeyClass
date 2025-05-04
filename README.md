@@ -1,10 +1,12 @@
-# Reproducibility Project of KeyClass: Text Classification with Label-Descriptions Only
+# Reproducibility Project - KeyClass: Text Classification with Label-Descriptions Only
 
-This repository is an attempt at reproducing the paper [Classifying Unstructured Clinical Notes via Automatic Weak Supervision](https://arxiv.org/pdf/2206.12088) for the CS598 - Deep Learning for Healthcare class at UIUC Spring 2025. 
+This repository is an attempt at reproducing the paper [Classifying Unstructured Clinical Notes via Automatic Weak Supervision](https://arxiv.org/pdf/2206.12088) for the CS598 - Deep Learning for Healthcare at UIUC - Spring 2025. 
 
 The original code for the paper was obtained from the authors' Github repository: https://github.com/autonlab/KeyClass
 
 **This version includes modifications to attempt to support multi-label classification, for the MIMIC-III dataset, as described in the paper but not included in the original code repository.**
+
+A video presentation of our results in available at [Illinois MediaSpace](https://mediaspace.illinois.edu/media/t/1_sqvnrd7z).
 
 # 1. Repository Structure
 
@@ -233,7 +235,7 @@ Generated files will be inside the folder `/results/[dataset]/[experimentname]`:
 
 The log file for the training run will be saved at `/logs/[experimentname].log`.
 
-# 4. Running Multiple Training Runs with Different Hyperparamaters
+# 4. Executing Multiple Training Runs with Different Hyperparameters
 
 To facilitate **executing multiple training runs automatically** with **different hyperparameters**, we've developed the following scripts:
 - `run_experiments.py`: Executes training runs for benchmark datasets (single-label).
