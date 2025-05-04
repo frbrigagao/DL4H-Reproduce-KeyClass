@@ -196,7 +196,7 @@ To create a custom configuration just clone one of the files and save it with a 
 
 To train and evaluate a single model, first choose a `.yaml` configuration file (e.g., `config_imdb.yml` for IMDb or `config_mimic_unfiltered_descriptions.yml` for MIMIC-III after preprocessing).
 
-### 3.1 Single-Label Datasets (IMDB, AGNews, Amazon, DBPedia)
+### 3.2.1 Single-Label Datasets (IMDB, AGNews, Amazon, DBPedia)
 
 ``` shell
 cd scripts # Need to be in the /scripts folder 
@@ -209,7 +209,7 @@ uv run run_all.py --config ../config_files/config_imdb.yml --use_wandb 1
 uv run run_all.py --config ../config_files/config_imdb.yml --use_wandb 0 
 ```
 
-### 3.2 Multi-Label Dataset (MIMIC)
+### 3.2.2 Multi-Label Dataset (MIMIC)
 
 ``` shell
 # Example for MIMIC-III (ensure preprocessing is done first):
@@ -219,7 +219,7 @@ uv run run_all_multilabel_.py --config ../config_files/config_mimic_unfiltered_d
 uv run run_all_multilabel.py --config ../config_files/config_mimic_unfiltered_descriptions.yml --use_wandb 0
 ```
 
-### 3.3 Training Output Files
+## 3.3 Training Output Files
 
 The scripts will create a **unique experiment name** for the training run, that will be shown at the start.
 
@@ -311,19 +311,16 @@ In addition, all training runs were logged and are available at [Weights & Biase
 
 Dataset Statistics from Gao et al. (2022). Models were trained on the training set, but do not have access to labels. Unlike other datasets, MIMIC is a multi-label classification task where each clinical note is assigned to all relevant categories. All datasets, except MIMIC, are balanced.
 
-### 7.1.2 Computational Requirements
+### 7.1.2 Compute Statistics
 
+**Hardware Configurations and Number of Completed Experiments per Configuration:**
 <img src="assets/00_hardware_configs.png" alt="Hardware" height="150"/>
 
-Hardware Configurations and Number of Completed Experiments per Configuration.
-
+**Compute Hours and Experiment Status per Dataset:**
 <img src="assets/00_total_experiments.png" alt="Compute_Hours" height="150"/>
 
-Compute Hours and Experiment Status per Dataset.
-
+**Training Epochs (label model, downstream classifier and self-trained model) and Average Runtime:**
 <img src="assets/00_average_runtime_per_epoch.png" alt="Epochs" height="150"/>
-
-Training Epochs (label model, downstream classifier and self-trained model) and Average Runtime.
 
 ## 7.2 Results - Benchmark Datasets (Single-Label)
 
