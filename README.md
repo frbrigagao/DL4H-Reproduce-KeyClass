@@ -6,7 +6,7 @@ The original code for the paper was obtained from the authors' Github repository
 
 **This version includes modifications to attempt to support multi-label classification, for the MIMIC-III dataset, as described in the paper but not included in the original code repository.**
 
-A video presentation of our results in available at [Illinois MediaSpace](https://mediaspace.illinois.edu/media/t/1_6cxc5zvw).
+A video presentation of our results is available at [Illinois MediaSpace](https://mediaspace.illinois.edu/media/t/1_6cxc5zvw).
 
 # 1. Repository Structure
 
