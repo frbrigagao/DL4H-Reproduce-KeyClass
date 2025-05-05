@@ -126,7 +126,6 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
      sample_weights_masked, proba_preds_masked = load_data(args, experiment_name)
 
     # Train a downstream classifier
-
     if args['use_custom_encoder']:
         encoder = models.CustomEncoder(
             pretrained_model_name_or_path=args['base_encoder'],
@@ -162,8 +161,6 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
 
     # Saving the end model
     if not os.path.exists(final_model_path): os.makedirs(final_model_path)
-    #current_time = datetime.now()
-    #model_name = f'end_model_{current_time.strftime("%d-%m-%Y-%H-%M-%S")}.pth'
     model_name = f'end_model.pth'
     print(f'Saving model {model_name}...')
     with open(join(final_model_path, model_name), 'wb') as f:
@@ -247,7 +244,6 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
             run = run)
 
         # Save self-trained end model to file
-
         model_name = f'end_model_self_trained.pth'
         print(f'Saving model {model_name}...')
         with open(join(final_model_path, model_name), 'wb') as f:

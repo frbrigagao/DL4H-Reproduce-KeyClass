@@ -52,17 +52,12 @@ if __name__ == "__main__":
     args_cmd = parser_cmd.parse_args()
 
     print(f'Loading configuration file: {args_cmd.config}')
-
-    # Parse the configuration file specified by the command line argument.
-    # The resulting 'args' dictionary will contain all parameters, including
-    # 'problem_type' and 'average', which are necessary for conditional logic in the sub-modules.
     args = utils.Parser(config_file_path=args_cmd.config).parse()
 
     run = None
     use_wandb = True if args_cmd.use_wandb == 1 else False
     skip_self_training = True if args_cmd.skip_self_training == 1 else False
 
-    # Get current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H-%M-%S")
     target_descriptions = 'unfiltered' if 'unfiltered' in args_cmd.config else 'filtered'
     ngram_desc = f"{args['ngram_range'][0]}_{args['ngram_range'][1]}"
@@ -74,14 +69,13 @@ if __name__ == "__main__":
     elif args['label_model'] == 'majority_vote':
         # Example experiment name structure: mimic_filtered_lr_0.001_b_128_lf_300_mv_20230415_103000
         experiment_name = f"{args['dataset']}_{target_descriptions}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_ngram_{ngram_desc}__mv_{timestamp}"
-    else: # Unsupported model
+    else:
         print(f"Unsupported label model in config file: {args['label_model']}")
         sys.exit(1)
 
-    # Define notes for logging, useful for quick reference in W&B or log
-
+    # Define notes for logging
     notes = (
-        f"Dataset: {args['dataset']} ({args.get('problem_type', 'single_label')})\n" # Include problem_type
+        f"Dataset: {args['dataset']} ({args.get('problem_type', 'single_label')})\n"
         f"Learning Rate: {args['end_model_lr']}\n"
         f"Batch Size: {args['end_model_batch_size']}\n"
         f"Labeling Functions (TopK): {args['topk']}\n"
@@ -94,7 +88,7 @@ if __name__ == "__main__":
     # Weights & Biases setup (optional)
     if use_wandb:
         tag_dataset = args['dataset']
-        tag_problem_type = args.get('problem_type', 'single_label') # Add tag for problem type
+        tag_problem_type = args.get('problem_type', 'single_label')
         tag_lr = f"lr_{args['end_model_lr']}"
         tag_batch_size = f"batch_size_{args['end_model_batch_size']}"
         tag_number_lf = f"label_functions_{args['topk']}"

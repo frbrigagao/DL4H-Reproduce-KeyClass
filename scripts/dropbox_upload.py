@@ -32,6 +32,7 @@ from tqdm import tqdm
 # ===============================================
 
 # Set your credentials here - you'll need all these for automatic token refresh
+# TODO: Migrate this to external .env file
 DROPBOX_CREDENTIALS = {
     # Your app key (required for refresh)
     'app_key': '',

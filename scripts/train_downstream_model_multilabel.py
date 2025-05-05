@@ -112,13 +112,13 @@ def load_data(args, experiment_name):
                     y_train = np.array(parsed_labels, dtype=np.float32)
                     training_labels_present = True
                     print(f"Loaded multi-label training labels. Shape: {y_train.shape}, dtype: {y_train.dtype}")
-                    # Verification: Check if number of classes matches config
+                    # Check if number of classes matches config
                     if y_train.shape[1] != args['n_classes']:
                         print(f"Warning: Number of columns in parsed training labels ({y_train.shape[1]}) does not match n_classes in config ({args['n_classes']}).")
 
                 else:
                     print("Warning: No valid multi-label training labels found after parsing.")
-                    training_labels_present = False # Ensure flag is false if no labels loaded
+                    training_labels_present = False
 
             elif args['problem_type'] == 'single_label':
                 print("Processing single-label training labels...")
@@ -129,16 +129,15 @@ def load_data(args, experiment_name):
                     print(f"Loaded single-label training labels. Shape: {y_train.shape}, dtype: {y_train.dtype}")
                 except ValueError as e:
                     print(f"Error parsing single-label training labels: {e}")
-                    y_train = None # Reset y_train on error
+                    y_train = None
                     training_labels_present = False
             else:
                 raise ValueError(f"Unsupported problem_type in config: {args['problem_type']}")
-            # --- End of Conditional Logic ---
     else:
         print('No training labels file found.')
-        y_train = None # Explicitly set to None if file doesn't exist
+        y_train = None
     
-    # Load testing ground truth labels (these should always exist for evaluation)
+    # Load test ground truth labels
     test_labels_path = join(args['data_path'], args['dataset'], 'test_labels.txt')
     if not exists(test_labels_path):
         raise FileNotFoundError(f"Test labels file not found at: {test_labels_path}")
@@ -149,11 +148,10 @@ def load_data(args, experiment_name):
     if not test_label_lines:
          raise ValueError("Test labels file is empty.")
     
-    # --- Conditional Logic based on problem_type ---
     if args['problem_type'] == 'multi_label':
         print("Processing multi-label test labels...")
         parsed_labels = []
-        expected_len = -1 # To check consistency
+        expected_len = -1
         for i, line in enumerate(test_label_lines):
             line = line.strip()
             if not line: continue # Skip empty lines
@@ -173,9 +171,9 @@ def load_data(args, experiment_name):
         if not parsed_labels:
              raise ValueError("Could not parse any valid multi-label test labels.")
 
-        y_test = np.array(parsed_labels, dtype=np.float32) # Use float32 for consistency
+        y_test = np.array(parsed_labels, dtype=np.float32)
         print(f"Loaded multi-label test labels. Shape: {y_test.shape}, dtype: {y_test.dtype}")
-        # Verification: Check if number of classes matches config
+        # Check if number of classes matches config
         if y_test.shape[1] != args['n_classes']:
              print(f"Warning: Number of columns in parsed test labels ({y_test.shape[1]}) does not match n_classes in config ({args['n_classes']}).")
 
@@ -198,8 +196,6 @@ def load_data(args, experiment_name):
         print(f'Size of training labels: {y_train.shape}') # Shape depends on problem_type now
         if args['problem_type'] == 'single_label':
             print(f'Training class distribution (ground truth): {np.unique(y_train, return_counts=True)[1]/len(y_train)}')
-            # Note: Printing class distribution for multi-label requires summing columns, which might be less informative here.
-            # TODO: Verify if is necessary to add class distribution for multi-label classification.
     
     print(f'Training class distribution (label model predictions): {np.unique(y_train_lm, return_counts=True)[1]/len(y_train_lm)}')
 
@@ -251,8 +247,7 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
      X_test_embed, y_test, training_labels_present, \
      sample_weights_masked, proba_preds_masked = load_data(args, experiment_name)
 
-    # Train a downstream classifier
-
+    # Train downstream classifier
     if args['use_custom_encoder']:
         encoder = models.CustomEncoder(
             pretrained_model_name_or_path=args['base_encoder'],
@@ -267,16 +262,15 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
         activation=eval(args['activation']),
         device=torch.device(args['device']))
     
-    # --- Determine the correct target for training ---
     criterion_instance = eval(args['criterion'])
     is_multi_label_loss = isinstance(criterion_instance, torch.nn.BCEWithLogitsLoss)
 
     if is_multi_label_loss:
         print("Using probabilistic labels (proba_preds_masked) as target for BCEWithLogitsLoss.")
-        y_train_target = proba_preds_masked # Use the probabilities directly
-    else: # Assuming single-label CrossEntropyLoss
+        y_train_target = proba_preds_masked # Use probabilities directly
+    else: # Single-label CrossEntropyLoss
         print("Using discrete label model predictions (y_train_lm_masked) as target for CrossEntropyLoss.")
-        y_train_target = y_train_lm_masked # Use the argmax labels
+        y_train_target = y_train_lm_masked # Use argmax labels
     
     print('\n===== Training the downstream classifier =====\n')
 
@@ -299,8 +293,6 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
 
     # Saving the end model
     if not os.path.exists(final_model_path): os.makedirs(final_model_path)
-    #current_time = datetime.now()
-    #model_name = f'end_model_{current_time.strftime("%d-%m-%Y-%H-%M-%S")}.pth'
     model_name = f'end_model.pth'
     print(f'Saving model {model_name}...')
     with open(join(final_model_path, model_name), 'wb') as f:
@@ -310,27 +302,26 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
     end_model_preds_train_proba = model.predict_proba(torch.from_numpy(X_train_embed_masked), batch_size=512, raw_text=False, problem_type=args['problem_type'])
     end_model_preds_test_proba = model.predict_proba(torch.from_numpy(X_test_embed), batch_size=512, raw_text=False, problem_type=args['problem_type'])
 
-    # --- Generate Discrete Predictions for Evaluation ---
+    # Generate discrete predictions
     if args['problem_type'] == 'multi_label':
          end_model_preds_train_discrete = (end_model_preds_train_proba >= 0.5).astype(int)
          end_model_preds_test_discrete = (end_model_preds_test_proba >= 0.5).astype(int)
-    else: # single_label
+    else:
          end_model_preds_train_discrete = np.argmax(end_model_preds_train_proba, axis=1)
          end_model_preds_test_discrete = np.argmax(end_model_preds_test_proba, axis=1)
 
-    # --- Save the Predictions ---
     # Save probabilities
     with open(join(final_preds_path, 'end_model_preds_train_proba.pkl'), 'wb') as f:
         pickle.dump(end_model_preds_train_proba, f)
     with open(join(final_preds_path, 'end_model_preds_test_proba.pkl'), 'wb') as f:
         pickle.dump(end_model_preds_test_proba, f)
-     # Save discrete predictions (useful for debugging/analysis)
+     # Save discrete predictions
     with open(join(final_preds_path, 'end_model_preds_train_discrete.pkl'), 'wb') as f:
         pickle.dump(end_model_preds_train_discrete, f)
     with open(join(final_preds_path, 'end_model_preds_test_discrete.pkl'), 'wb') as f:
         pickle.dump(end_model_preds_test_discrete, f)
 
-     # --- Evaluate End Model Performance ---
+     # Evaluate end model performance
     print("\n--- Evaluating End Model ---")
 
     # Print statistics
@@ -394,8 +385,7 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
             split='test'
         )
     
-    # --- Self-Training Section ---
-
+    # Self-Training Section
     if skip_self_training:
         print('\n===== SKIPPING self-training of the downstream classifier ======\n')
     else:
@@ -424,7 +414,6 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
             run = run)
 
         # Save self-trained end model to file
-
         model_name = f'end_model_self_trained.pth'
         print(f'Saving model {model_name}...')
         with open(join(final_model_path, model_name), 'wb') as f:
@@ -433,17 +422,12 @@ def train(args_cmd, use_wandb = False, run = None, experiment_name = '', skip_se
         # Run predictions
         end_model_preds_test = model_self_trained.predict_proba(X_test_text, batch_size=args['self_train_batch_size'], raw_text=True, problem_type=args['problem_type'])
 
-        # # Save the predictions
-        # with open(join(final_preds_path, 'end_model_self_trained_preds_test.pkl'), 'wb') as f:
-        #     pickle.dump(end_model_preds_test, f)
-
         # Generate discrete predictions
         if args['problem_type'] == 'multi_label':
              st_model_preds_test_discrete = (end_model_preds_test >= 0.5).astype(int)
-        else: # single_label
+        else:
              st_model_preds_test_discrete = np.argmax(end_model_preds_test, axis=1)
 
-        # --- Save the self-trained predictions ---
         # Save probabilities
         with open(join(final_preds_path, 'end_model_self_trained_preds_test_proba.pkl'), 'wb') as f:
              pickle.dump(end_model_preds_test, f)
@@ -519,33 +503,11 @@ def test(args_cmd, end_model_path, end_model_self_trained_path, experiment_name)
     if args['problem_type'] == 'multi_label':
          end_model_preds_train_discrete = (end_model_preds_train_proba >= 0.5).astype(int)
          end_model_preds_test_discrete = (end_model_preds_test_proba >= 0.5).astype(int)
-    else: # single_label
+    else:
          end_model_preds_train_discrete = np.argmax(end_model_preds_train_proba, axis=1)
          end_model_preds_test_discrete = np.argmax(end_model_preds_test_proba, axis=1)
 
-    # Print statistics
-    # if training_labels_present:
-    #     training_metrics_with_gt = utils.compute_metrics(
-    #         y_preds=np.argmax(end_model_preds_train, axis=1),
-    #         y_true=y_train_masked,
-    #         average=args['average'],
-    #         problem_type=args['problem_type'])
-    #     print('training_metrics_with_gt', training_metrics_with_gt)
-
-    # training_metrics_with_lm = utils.compute_metrics(y_preds=np.argmax(
-    #     end_model_preds_train, axis=1), y_true=y_train_lm_masked, average=args['average'], problem_type=args['problem_type'])
-    # print('training_metrics_with_lm', training_metrics_with_lm)
-
-    # testing_metrics = utils.compute_metrics_bootstrap(
-    #     y_preds=np.argmax(end_model_preds_test, axis=1),
-    #     y_true=y_test,
-    #     average=args['average'],
-    #     n_bootstrap=args['n_bootstrap'],
-    #     n_jobs=args['n_jobs'],
-    #     problem_type=args['problem_type'])
-    # print('testing_metrics', testing_metrics)
-
-    # --- Evaluate Non-Self-Trained Model ---
+    # Evaluate end model
     print("--- Non-Self-Trained Model Evaluation ---")
     if training_labels_present and y_train_masked is not None:
         print("On Masked Training Set (vs Ground Truth):")
@@ -587,8 +549,6 @@ def test(args_cmd, end_model_path, end_model_self_trained_path, experiment_name)
 
     print('\n===== Testing the end model self-trained downstream classifier =====\n')
 
-    # Fetching the raw text data for self-training
-    # X_train_text = utils.fetch_data(dataset=args['dataset'], path=args['data_path'], split='train')
     X_test_text = utils.fetch_data(dataset=args['dataset'], path=args['data_path'], split='test')
 
     model = torch.load(end_model_self_trained_path)
@@ -599,7 +559,7 @@ def test(args_cmd, end_model_path, end_model_self_trained_path, experiment_name)
     # Generate discrete predictions
     if args['problem_type'] == 'multi_label':
         st_model_preds_test_discrete = (st_model_preds_test_proba >= 0.5).astype(int)
-    else: # single_label
+    else:
         st_model_preds_test_discrete = np.argmax(st_model_preds_test_proba, axis=1)
 
     # Evaluate Self-Trained Model
@@ -621,17 +581,6 @@ def test(args_cmd, end_model_path, end_model_self_trained_path, experiment_name)
             y_pred=st_model_preds_test_discrete,
             labels_file_path=category_labels_path
         )
-
-    # Print statistics
-    # testing_metrics = utils.compute_metrics_bootstrap(
-    #     y_preds=np.argmax(end_model_preds_test, axis=1),
-    #     y_true=y_test,
-    #     average=args['average'],
-    #     n_bootstrap=args['n_bootstrap'],
-    #     n_jobs=args['n_jobs'],
-    #     problem_type=args['problem_type'])
-        
-    # print('testing_metrics after self-train', testing_metrics)
     
     # Return the metrics from the self-trained model if available, otherwise the non-self-trained ones
     return final_self_trained_metrics if final_self_trained_metrics is not None else testing_metrics

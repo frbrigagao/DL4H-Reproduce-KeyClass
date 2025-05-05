@@ -1,8 +1,6 @@
 ##################################################################################
 # Notes: This is code for reading in the raw MIMIC data and processing it into
 # something that can be worked with in the pipeline. 
-# TODO:
-  # 1) Process text by removing stop words and creating a vocab
 ##################################################################################
 
 library(stringr)

@@ -49,14 +49,13 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
 
     final_preds_path = args['results_path'] + experiment_name + '/predictions'
     final_results_path = args['results_path'] + experiment_name + '/metrics'
-    # final_embeddings_path = args['results_path'] + experiment_name + '/data_embeddings'
 
-    # --- Load Training Data Text ---
+    # Load training data
     print(f"Fetching training text data for dataset: {args['dataset']}...")
     train_text = utils.fetch_data(dataset=args['dataset'], path=args['data_path'], split='train')
     print(f"Loaded {len(train_text)} training text samples.")
 
-    # --- Load Ground Truth Training Labels (Conditional) ---
+    # Load training labels
     y_train = None
     training_labels_present = False
     train_labels_filepath = join(args['data_path'], args['dataset'], 'train_labels.txt')
@@ -99,13 +98,11 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
         if y_train is not None and len(y_train) > 0:
             if len(y_train) != len(train_text):
                  print(f"ERROR: Mismatch between number of text samples ({len(train_text)}) and loaded labels ({len(y_train)}). Check data files.")
-                 # Decide how to handle mismatch - potentially exit or proceed with caution
-                 # For now, proceed but acknowledge the potential issue
                  sys.exit(1)
             training_labels_present = True
         else:
             print("ERROR: Training labels file exists but loading resulted in empty or invalid data.")
-            y_train = None # Ensure y_train is None if loading failed
+            y_train = None
             training_labels_present = False
             sys.exit(1)
 
@@ -113,26 +110,7 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
         print(f"No training labels file found at: {train_labels_filepath}")
         training_labels_present = False
 
-    # if exists(join(args['data_path'], args['dataset'], 'train_labels.txt')):
-    #     with open(join(args['data_path'], args['dataset'], 'train_labels.txt'), 'r') as f:
-    #         y_train = f.readlines()
-    #     y_train = np.array([int(i.replace('\n', '')) for i in y_train])
-    #     training_labels_present = True
-    # else:
-    #     y_train = None
-    #     training_labels_present = False
-    #     print('No training labels found!')
-
-    # with open(join(final_embeddings_path, 'train_embeddings.pkl'), 'rb') as f:
-    #     X_train = pickle.load(f)
-
     # Print dataset statistics
-    # print(f"Getting labels for the {args['dataset']} data...")
-    # print(f'Size of the data: {len(train_text)}')
-    # if training_labels_present:
-    #     print('Class distribution', np.unique(y_train, return_counts=True))
-
-    # --- Print Dataset Statistics ---
     print(f"\n--- Dataset Statistics ---")
     print(f"Dataset: {args['dataset']}")
     print(f"Problem Type: {args['problem_type']}")
@@ -163,7 +141,7 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
          print(f"ERROR: Number of target descriptions ({len(label_names)}) does not match n_classes ({args['n_classes']}) in config.")
          sys.exit(1)
 
-    # --- Create Labeling Functions & Generate Probabilistic Labels ---
+    # Create label functions and get labels
     print("\n--- Generating Weak Labels using Label Model ---")
     labeler = create_lfs.CreateLabellingFunctions(
         base_encoder=args['base_encoder'],
@@ -183,9 +161,7 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
         n_classes=args['n_classes'])
     print("Generated probabilistic labels (proba_preds) with shape:", proba_preds.shape)
 
-    # y_train_pred = np.argmax(proba_preds, axis=1)
-
-    # --- Save Probabilistic Predictions ---
+    # Save label model predictions
     print("\n--- Saving Label Model Outputs ---")
     if not os.path.exists(final_preds_path):
         os.makedirs(final_preds_path)
@@ -197,23 +173,21 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
     print(f"Saved probabilistic predictions to: {proba_preds_filepath}")
 
 
-    # --- Evaluate Label Model Against Ground Truth (if available) ---
+    # Evaluate label model against ground truth (if available)
     print("\n--- Evaluating Label Model Performance (if ground truth available) ---")
     if training_labels_present:
         print("Ground truth training labels found. Evaluating...")
 
         if args['problem_type'] == 'multi_label':
             print("Evaluating multi-label predictions...")
+            
             # Generate binary predictions from probabilities using a 0.5 threshold
             y_train_pred_binary = (proba_preds >= 0.5).astype(int)
 
             print('Label Model Binary Predictions (Top 5 samples):\n', y_train_pred_binary[:5])
             print('Ground Truth Labels (Top 5 samples):\n', y_train[:5])
-
-            # Use the modified utils.compute_metrics for multi-label
-            print(f"Calculating metrics with average='{args['average']}'...") # Should be 'samples' for MIMIC
-            # Assuming compute_metrics returns [f1, precision, recall] for multi-label
-            # Pass problem_type explicitly if needed by compute_metrics implementation
+            print(f"Calculating metrics with average='{args['average']}'...")
+            
             training_metrics_with_gt = utils.compute_metrics(
                 y_preds=y_train_pred_binary,
                 y_true=y_train,
@@ -237,7 +211,7 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
 
                  # Log to Weights & Biases if enabled
                  if use_wandb:
-                     # Include the averaging method in the metric name for clarity
+                     # Include averaging method in the metric name for clarity
                      wandb_metrics = {
                          f"label_model/f1_{args['average']}": f1_val,
                          f"label_model/precision_{args['average']}": precision_val,
@@ -250,6 +224,7 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
 
         elif args['problem_type'] == 'single_label':
             print("Evaluating single-label predictions...")
+            
             # Generate discrete predictions using argmax
             y_train_pred = np.argmax(proba_preds, axis=1)
 
@@ -258,19 +233,17 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
             print('Label Model Predictions: Unique values and counts:',
                   np.unique(y_train_pred, return_counts=True))
 
-            # Calculate simple accuracy (for single-label)
+            # Calculate accuracy (for single-label)
             training_accuracy = np.mean(y_train_pred == y_train)
             print(f'Label Model Training Accuracy: {training_accuracy:.4f}')
 
-             # Log simple accuracy to Weights & Biases if enabled
+             # Log accuracy to Weights & Biases if enabled
             if use_wandb:
                  run.log({"label_model/training_accuracy": training_accuracy})
                  print("Logged single-label accuracy to W&B.")
 
-            # Use the modified utils.compute_metrics for single-label
-            print(f"Calculating metrics with average='{args['average']}'...") # Likely 'weighted' for benchmarks
-            # Assuming compute_metrics returns [accuracy, f1, precision, recall] for single-label
-             # Pass problem_type explicitly if needed by compute_metrics implementation
+            print(f"Calculating metrics with average='{args['average']}'...")
+            # Compute_metrics returns [accuracy, f1, precision, recall] for single-label
             training_metrics_with_gt = utils.compute_metrics(
                 y_preds=y_train_pred,
                 y_true=y_train,
@@ -286,14 +259,14 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
                  print(f"Label Model Training Precision ({args['average']}): {precision_val:.4f}")
                  print(f"Label Model Training Recall ({args['average']}): {recall_val:.4f}")
 
-                 # Log detailed metrics to file
+                 # Log metrics to file
                  metrics_dict = {'Accuracy': acc_val, 'F1': f1_val, 'Precision': precision_val, 'Recall': recall_val}
                  utils.log(metrics=metrics_dict,
                            filename='label_model_with_ground_truth',
                            results_dir=final_results_path,
                            split='train',
                            problem_type=args['problem_type'])
-                 # Log detailed metrics to W&B if enabled (optional, accuracy already logged)
+                 # Log metrics to W&B if enabled
                  if use_wandb:
                      wandb_metrics = {
                           f"label_model/f1_{args['average']}": f1_val,
@@ -312,39 +285,7 @@ def run(args_cmd, use_wandb = False, run = None, experiment_name = ''):
         print("No ground truth training labels available. Skipping label model evaluation.")
 
     print("\n--- Labeling Data Script Finished ---")
-
-    # # Print statistics
-    # print('Label Model Predictions: Unique value and counts',
-    #       np.unique(y_train_pred, return_counts=True))
     
-    # if training_labels_present:
-
-    #     # training_accuracy = np.mean(y_train_pred == y_train)
-
-    #     # # Log the label model training accuracy to Weights & Biases
-    #     # if use_wandb:
-    #     #     run.log({"label_model/training_accuracy": training_accuracy})
-
-    #     # print('Label Model Training Accuracy', training_accuracy)
-
-    #     # Log the metrics
-    #     training_metrics_with_gt = utils.compute_metrics(
-    #         y_preds=y_train_pred, y_true=y_train, average=args['average'], problem_type=args['problem_type'])
-        
-    #     if args['problem-type'] == 'multi_label':
-    #         print(f"Label Model Training F1 Score: {training_metrics_with_gt[0]}")
-    #     else: # single-label
-    #         print(f"Label Model Training Accuracy: {training_metrics_with_gt[0]}")
-    #         if use_wandb:
-    #             run.log({"label_model/training_accuracy": training_metrics_with_gt[0]})
-        
-    #     utils.log(metrics=training_metrics_with_gt,
-    #               filename='label_model_with_ground_truth',
-    #               results_dir=final_results_path,
-    #               split='train',
-    #               problem_type=args['problem_type'])
-
-
 # if __name__ == "__main__":
 #     parser_cmd = argparse.ArgumentParser()
 #     parser_cmd.add_argument('--config', default='../default_config.yml', help='Configuration file')

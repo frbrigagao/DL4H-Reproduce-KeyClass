@@ -107,7 +107,9 @@ def process_dataset(data_train_path, data_test_path, output_dir, code_idx=9, tex
     category_to_idx = {cat: i for i, cat in enumerate(top_level_categories)}
 
     # print(category_to_idx)
-    # OUTPUT: {'cat:1': 0, 'cat:2': 1, 'cat:3': 2, 'cat:4': 3, 'cat:5': 4, 'cat:6': 5, 'cat:7': 6, 'cat:8': 7, 'cat:9': 8, 'cat:10': 9, 'cat:11': 10, 'cat:12': 11, 'cat:13': 12, 'cat:14': 13, 'cat:15': 14, 'cat:16': 15, 'cat:17': 16, 'cat:18': 17, 'cat:19': 18}
+    # OUTPUT: {'cat:1': 0, 'cat:2': 1, 'cat:3': 2, 'cat:4': 3, 'cat:5': 4, 'cat:6': 5, 'cat:7': 6, 'cat:8': 7, 
+    #          'cat:9': 8, 'cat:10': 9, 'cat:11': 10, 'cat:12': 11, 'cat:13': 12, 'cat:14': 13, 'cat:15': 14, 
+    #          'cat:16': 15, 'cat:17': 16, 'cat:18': 17, 'cat:19': 18}
     
     # Prepare output files
     os.makedirs(output_dir, exist_ok=True)
@@ -208,7 +210,7 @@ if __name__ == "__main__":
         data_train_path=data_train_path,
         data_test_path=data_test_path,
         output_dir=output_dir,
-        code_idx=8,  # Column with the top-level ICD9 Codes
-        text_idx=6,  # Column with the text of the report
+        code_idx=8,  # Column with the top-level ICD9 Codes (DO NOT CHANGE UNLESS NECESSARY)
+        text_idx=6,  # Column with the text of the report (DO NOT CHANGE UNLESS NECESSARY)
         max_note_length=None # Keep the entire note
     )

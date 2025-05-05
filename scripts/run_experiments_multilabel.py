@@ -19,7 +19,6 @@ from dropbox_upload import upload_to_dropbox
 EXPERIMENT_CSV_PREFIX = 'experiment_results_mimic'
 
 # Define datasets
-
 DATASETS = ['mimic'] 
 DATASET_DETAIL = ['filtered_descriptions', 'unfiltered_descriptions']
 
@@ -348,7 +347,6 @@ def run_all_experiments(use_wandb=False, keep_configs=False, use_dropbox=False):
     print(results)
 
     # Run all experiments
-
     print("Starting experiments loop...")
 
     for dataset in DATASETS:
@@ -356,9 +354,7 @@ def run_all_experiments(use_wandb=False, keep_configs=False, use_dropbox=False):
             # Get parameters for this dataset
             default_params = get_default_parameters(dataset_detail, dataset)
             
-
             # Get available parameter options for this dataset
-            
             lr_options = LEARNING_RATES.get(dataset, [default_params['end_model_lr']])
             batch_size_options = BATCH_SIZES.get(dataset, [default_params['end_model_batch_size']])
             label_model_options = LABEL_MODELS.get(dataset, [default_params['label_model']])
@@ -381,7 +377,7 @@ def run_all_experiments(use_wandb=False, keep_configs=False, use_dropbox=False):
                                 # Check if this experiment has already been run by checking the DataFrame
                                 experiment_mask = ((results['dataset'] == dataset) & 
                                                 (results['config'] == dataset_detail) &
-                                                (results['learning_rate'] == float(lr)) &  # Compare as float
+                                                (results['learning_rate'] == float(lr)) &
                                                 (results['batch_size'] == batch_size) & 
                                                 (results['label_model'] == label_model) &
                                                 (results['labeling_functions'] == lf_count) &

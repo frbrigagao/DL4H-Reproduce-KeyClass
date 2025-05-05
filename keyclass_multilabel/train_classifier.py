@@ -51,9 +51,9 @@ def get_q_soft(p: np.ndarray):
 
 def train(model: torch.nn.Module,
           X_train: Union[Union[str, List[str]], np.ndarray],
-          y_train: Union[torch.Tensor, np.ndarray], # IMPORTANT: For multi-label (BCE), this should be the probabilistic labels (n_samples, n_classes). For single-label (CE), this should be integer labels (n_samples,).
-          device: torch.device = torch.device("cuda"),
-          sample_weights: Optional[np.array] = None, # Used only for single-label CE loss if use_noise_aware_loss is True
+          y_train: Union[torch.Tensor, np.ndarray],       # IMPORTANT: For multi-label (BCE), this should be the probabilistic labels (n_samples, n_classes). 
+          device: torch.device = torch.device("cuda"),    # For single-label (CE), this should be integer labels (n_samples,).
+          sample_weights: Optional[np.array] = None,      # Used only for single-label CE loss if use_noise_aware_loss is True
           epochs: int = 200,
           batch_size: int = 128,
           criterion: Callable = torch.nn.CrossEntropyLoss(reduction='none'),
@@ -137,9 +137,6 @@ def train(model: torch.nn.Module,
             optimizer.zero_grad()
             indices = permutation[i:i + batch_size]
 
-            # batch_x, batch_y = X_train[indices], y_train[indices]
-            # batch_y = batch_y.to(device)
-
             batch_x = X_train[indices] # Embeddings are already numpy/torch tensors
             batch_y = y_train[indices].to(device) # Target labels (int or float based on loss)
 
@@ -151,9 +148,6 @@ def train(model: torch.nn.Module,
                     batch_x = torch.from_numpy(batch_x).to(device).float()
                 else: # assume it's already a tensor slice (original implementation)
                     batch_x = batch_x.to(device)
-
-            # out = model.forward(batch_x, mode='inference', raw_text=raw_text)
-            # loss = criterion(out, batch_y)
 
             # model.forward should return raw logits
             out_logits = model.forward(batch_x, raw_text=raw_text)
@@ -172,13 +166,6 @@ def train(model: torch.nn.Module,
                     loss = torch.mul(loss_unreduced, batch_weight.squeeze()).mean() # Squeeze if weight is (N, 1)
                 else:
                     loss = loss_unreduced.mean()
-
-            # ORIGINAL CODE:
-            # if sample_weights is not None:
-            #     batch_weight = sample_weights[indices]
-            #     loss = torch.mul(loss, batch_weight).mean()
-            # else:
-            #     loss = loss.mean()
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -217,7 +204,6 @@ def train(model: torch.nn.Module,
                 return model
     
     # Load best state if training finished normally (Gemini correction)
-    # TODO: Check if it is aligned with the paper
     if best_state_dict is not None:
         model.load_state_dict(best_state_dict)
 
@@ -273,33 +259,23 @@ def self_train(model: torch.nn.Module,
 
     # Update P every batch and Q every epoch
     N = len(X_train)
-    # permutation = torch.randperm(N)
 
     # Convert X_train to numpy array only if it's not already (e.g., if it's a list)
     if not isinstance(X_train, np.ndarray):
         X_train = np.array(X_train, dtype=object) # Use dtype=object for lists of strings
-
-    # X_train = np.array(X_train)  # Ensures that we are able to index into X_train
 
     pbar = trange(N // (batch_size * q_update_interval), unit="epochs")
     
     for epoch in pbar:
         pbar.set_description(f"Self-Train Epoch {epoch}")
 
-        # inds = np.random.randint(0, N, batch_size * q_update_interval)
-
         # Get indices for the full target update pass
         update_indices = np.random.permutation(N)
         num_updates_per_epoch = N // (batch_size * q_update_interval)
 
-        # --- Target Distribution (Q) Update ---
-        # Predict probabilities on the entire training set (or a large random subset for efficiency if N is huge)
+        # Predict probabilities on the entire training set (or large random subset for efficiency if N is huge)
         # This uses model.predict_proba which applies sigmoid/softmax internally based on problem type
         with torch.no_grad():
-
-            # Gemini Suggestion: Consider using a subset for very large N to speed up target generation
-            # target_gen_indices = np.random.choice(N, size=min(N, 50000), replace=False)
-            # pred_proba = model.predict_proba(X_train[target_gen_indices], batch_size=batch_size, raw_text=True)
 
             pred_proba = model.predict_proba(X_train, batch_size=batch_size, raw_text=True, problem_type=problem_type)
             target_dist_q = get_q_soft(pred_proba) # should be of size (N, num_categories)
@@ -310,7 +286,7 @@ def self_train(model: torch.nn.Module,
 
             # Calculate agreement based on label comparison
             if problem_type == 'multi_label':
-                 # Agreement for multi-label: fraction of samples where predicted labels exactly match target labels
+                 # Agreement for multi-label: fraction of samples where predicted labels match target labels
                  self_train_agreement = np.mean(np.all(pred_labels_p == target_labels_q, axis=1))
             else: # single-label
                  self_train_agreement = np.mean(pred_labels_p == target_labels_q)
@@ -324,22 +300,7 @@ def self_train(model: torch.nn.Module,
                 print(f"Stopping self-training early due to high agreement ({self_train_agreement:.4f} > {self_train_thresh:.4f}) for {patience} epochs.")
                 break
 
-        # with torch.no_grad():
-        #     pred_proba = model.predict_proba(X_train[inds], batch_size=batch_size, raw_text=True)
-        #     target_dist = get_q_soft(pred_proba)  # should be of size (N, num_categories)
-        #     target_preds = np.argmax(target_dist, axis=1)
-
-        #     self_train_agreement = np.mean(np.argmax(pred_proba, axis=1) == target_preds)
-
-        #     if self_train_agreement > self_train_thresh: 
-        #         tolcount += 1
-        #     else: 
-        #         tolcount = 0
-
-        #     if tolcount >= patience:
-        #         break
-
-        # --- Model Training Steps ---
+        # Model Training Steps
         current_step_in_epoch = 0
         # Use update_indices to shuffle data access within the epoch
         shuffled_indices = np.random.permutation(N)
@@ -372,23 +333,9 @@ def self_train(model: torch.nn.Module,
             current_step_in_epoch += 1
             del batch_x, batch_q, out_logits, log_probs, loss # Free memory
 
-        # for i in range(0, batch_size * q_update_interval, batch_size):
-        #     batch_x = X_train[inds][i:i + batch_size]  # The training data is moved to device by the encoder model in its forward function
-        #     batch_q = torch.from_numpy(target_dist[i:i + batch_size]).to(device)
-
-        #     out = model.forward(batch_x, mode='self_train', raw_text=True)
-        #     loss = criterion(out, batch_q)
-        #     optimizer.zero_grad()
-        #     loss.backward()
-        #     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        #     optimizer.step()
-
-        #     del batch_x, batch_q
-
-        # Validation (optional, but recommended for monitoring)
         validation_accuracy_or_f1 = None # Use F1 for multi-label, Accuracy for single-label
         if print_eval:
-            val_preds_binary = model.predict(X_val, batch_size=batch_size, raw_text=True, problem_type=problem_type) # Gets binary predictions
+            val_preds_binary = model.predict(X_val, batch_size=batch_size, raw_text=True, problem_type=problem_type) # Get binary predictions
 
             if problem_type == 'multi_label':
                 # For multi-label validation, compute sample-averaged F1 score
@@ -420,24 +367,5 @@ def self_train(model: torch.nn.Module,
             if print_eval and validation_accuracy_or_f1 is not None:
                  log_dict[f"self_trained_end_model/{val_metric_name}"] = validation_accuracy_or_f1
             run.log(log_dict)
-
-        # if print_eval == True:
-        #     val_preds = model.predict(X_val)
-        #     # print('tolcount', tolcount, 'self_train_agreement', self_train_agreement, 'validation_accuracy', np.mean(val_preds==y_val))
-
-        # validation_accuracy = np.mean(val_preds == y_val)
-
-        # pbar.set_postfix(tolerance_count=tolcount,
-        #                  self_train_agreement=self_train_agreement,
-        #                  validation_accuracy=validation_accuracy if print_eval else None)        
-
-        # # Log training to Weights & Balances (if set)
-        # if use_wandb:
-        #     run.log({
-        #         "self_trained_end_model/epoch": epoch,
-        #         "self_trained_end_model/tolerance_count": tolcount,
-        #         "self_trained_end_model/self_train_agreement": self_train_agreement,
-        #         "self_trained_end_model/validation_accuracy": validation_accuracy
-        #     })
 
     return model

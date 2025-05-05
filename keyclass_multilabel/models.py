@@ -291,16 +291,12 @@ class FeedForwardFlexible(torch.nn.Module):
         self.layers = torch.nn.ModuleList()
         for k in range(len(h_sizes) - 1):
             self.layers.append(torch.nn.Linear(h_sizes[k], h_sizes[k + 1]))
-            # --- CHANGE START ---
             # Apply activation and dropout between hidden layers, but not after the final output layer
             if k < len(h_sizes) - 2:
                 self.layers.append(activation)
                 self.layers.append(torch.nn.Dropout(p=0.5))
-            # --- CHANGE END ---
-
         self.to(device)
 
-    # --- CHANGE START ---
     # Removed 'mode' argument as final activation is handled elsewhere.
     def forward(self, x, raw_text=True):
     # def forward(self, x, mode='inference', raw_text=True):
@@ -324,7 +320,6 @@ class FeedForwardFlexible(torch.nn.Module):
         # Pass input through the base encoder if it's raw text
         return x
 
-    # --- CHANGE START ---
     # Added 'problem_type' argument to handle different prediction logic.
     def predict(self, x_test, batch_size=128, raw_text=True, problem_type='single_label'):
         """
@@ -346,8 +341,7 @@ class FeedForwardFlexible(torch.nn.Module):
             preds = np.argmax(probs, axis=1)
 
         return preds
-
-    # --- CHANGE START ---
+    
     # Added 'problem_type' argument to apply correct activation during inference.
     def predict_proba(self, x_test, batch_size=128, raw_text=True, problem_type='single_label'):
         """
@@ -371,11 +365,11 @@ class FeedForwardFlexible(torch.nn.Module):
                 # Get raw logits from the forward method
                 logits = self.forward(test_batch, raw_text=raw_text)
 
-                # Apply the appropriate activation function based on the problem type
+                # Apply appropriate activation function based on problem type
                 if problem_type == 'multi_label':
                     # Use Sigmoid for multi-label probabilities (independent class probabilities)
                     probs = torch.sigmoid(logits).cpu().numpy()
-                else: # Default to single_label behavior
+                else: # Default for single_label behavior
                     # Use Softmax for single-label probabilities (mutually exclusive classes)
                     probs = torch.softmax(logits, dim=-1).cpu().numpy()
 

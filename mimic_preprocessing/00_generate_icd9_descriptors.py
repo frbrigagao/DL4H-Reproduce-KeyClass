@@ -24,8 +24,6 @@
 #   • Python 3.x
 #   • nltk (with ‘stopwords’ corpus)
 #   • re, argparse, collections
-#
-# Author:     Fabricio Brigagao
 
 import re
 import sys

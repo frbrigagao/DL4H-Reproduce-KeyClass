@@ -62,7 +62,6 @@ if __name__ == "__main__":
     use_wandb = True if args_cmd.use_wandb == 1 else False
     skip_self_training = True if args_cmd.skip_self_training == 1 else False
 
-    # Get current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H-%M-%S")
 
     # Define the experiment name
@@ -70,7 +69,7 @@ if __name__ == "__main__":
         experiment_name = f"{args['dataset']}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_dp_{timestamp}"
     elif args['label_model'] == 'majority_vote':
         experiment_name = f"{args['dataset']}_lr_{args['end_model_lr']}_b_{args['end_model_batch_size']}_lf_{args['topk']}_mv_{timestamp}"
-    else: # Unsupported model
+    else:
         print(f"Unsupported label model in config file: {args['label_model']}")
         sys.exit(1)
 
