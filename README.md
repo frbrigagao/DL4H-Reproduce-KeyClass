@@ -99,7 +99,7 @@ sudo apt install r-cran-stringr r-cran-data.table r-cran-dplyr r-cran-lubridate 
 ```
 *(Note: If you encounter issues installing R packages via apt, you might need to install them within R itself using `install.packages(c("stringr", "data.table", ...))`)*
 
-After the previous command completes, **within the project folder**, run:
+After the previous command completes, run the following in sequence:
 ```shell 
 # Clone this repository 
 git clone https://github.com/frbrigagao/DL4H-Reproduce-KeyClass.git 
