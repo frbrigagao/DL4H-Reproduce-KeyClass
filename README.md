@@ -83,7 +83,13 @@ For some training runs with DBPedia, Amazon, and MIMIC, better GPUs or running d
 
 First, have **CUDA 12.4+**  installed on the system. A guideline is available on the [Nvidia website](https://developer.nvidia.com/cuda-12-4-0-download-archive). 
 
-Install the `uv` python package manager, available at https://github.com/astral-sh/uv.
+Install the `uv` python package manager, using the instructions at https://github.com/astral-sh/uv#installation.
+```shell
+# Basic install command for Debian/Ubuntu
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+source $HOME/.local/bin/env
+```
 
 On Debian/Ubuntu, run this command to install the dependencies to compile the `slycot` package and to run R scripts (required for MIMIC dataset preprocessing):
 ``` shell
@@ -94,9 +100,17 @@ sudo apt install r-cran-stringr r-cran-data.table r-cran-dplyr r-cran-lubridate 
 *(Note: If you encounter issues installing R packages via apt, you might need to install them within R itself using `install.packages(c("stringr", "data.table", ...))`)*
 
 After the previous command completes, **within the project folder**, run:
-
-- `source .venv/bin/activate` to activate the project's virtual environment.
-- `uv sync` to install the necessary python packages. 
+```shell 
+# Clone this repository 
+git clone https://github.com/frbrigagao/DL4H-Reproduce-KeyClass.git 
+# cd into folder
+cd DL4H-Reproduce-KeyClass
+# Install the necessary packages
+uv sync 
+# Activate virtual environment
+source .venv/bin/activate
+source $HOME/.local/bin/env
+```
 
 *If you want to use another python environment (conda or pip), the necessary packages are listed in the `pyproject.toml` file.*
 
