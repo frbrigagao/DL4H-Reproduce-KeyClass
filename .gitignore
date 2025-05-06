@@ -8,6 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+.github
 mimic_preprocessing/data/
 original_data/
 pretrained_models/
