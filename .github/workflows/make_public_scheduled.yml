@@ -1,0 +1,55 @@
+name: Make Repository Public Scheduled
+
+on:
+  schedule:
+    # Runs at 03:00 UTC on the 8th of May.
+    # This corresponds to 10:00 PM Chicago Time (CDT, UTC-5) on May 7th.
+    # Check DST for Chicago in 2025: May 7th is during DST (CDT = UTC-5).
+    # 10:00 PM CDT May 7th = 22:00 CDT May 7th = 03:00 UTC May 8th.
+    - cron: '0 3 8 5 *' # 2025 only implicitly due to the date
+  workflow_dispatch: # Allows manual triggering for testing
+
+permissions:
+  # Required to change repository settings, including visibility
+  administration: write
+  # Required by actions/checkout
+  contents: read
+
+jobs:
+  make_public:
+    runs-on: ubuntu-latest
+    # Ensures this job only runs in 2025.
+    # While the cron triggers on May 8th every year, this 'if' condition restricts it.
+    if: github.event.schedule == '0 3 8 5 *' && format('{0:yyyy}', github.event.repository.updated_at) <= '2025' # A bit of a hack for year
+    # A more robust way to check year would be to parse the current date in a step,
+    # but for a one-off event, the cron date specificity is primary.
+    # The best way is to simply REMOVE this workflow after it has run in 2025.
+
+    steps:
+      - name: Checkout repository (optional, but good practice)
+        uses: actions/checkout@v4
+
+      - name: Get current year
+        id: get_year
+        run: echo "YEAR=$(date +'%Y')" >> $GITHUB_OUTPUT
+
+      - name: Make repository public on specific date
+        # This step only runs if it's May 8th of 2025 (UTC)
+        if: steps.get_year.outputs.YEAR == '2025'
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_PAT }}
+          REPO_NAME: ${{ github.repository }} # e.g., owner/repo-name
+        run: |
+          echo "Scheduled time reached: May 7th, 2025, 10 PM Chicago Time (03:00 UTC May 8th, 2025)."
+          echo "Current UTC date: $(date -u)"
+          echo "Attempting to make repository '$REPO_NAME' public..."
+          gh repo edit $REPO_NAME --visibility public
+          echo "Repository '$REPO_NAME' visibility has been set to public."
+          echo "SUCCESS! This workflow has completed its one-time task."
+          echo "Consider disabling or deleting this workflow now."
+
+      - name: Log if not the target year
+        if: steps.get_year.outputs.YEAR != '2025'
+        run: |
+          echo "Skipping: Not the target year 2025. Current year: ${{ steps.get_year.outputs.YEAR }}."
+          echo "This workflow is intended to run only on May 8th, 2025 (UTC)."
