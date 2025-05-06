@@ -34,7 +34,7 @@ jobs:
           echo "Current UTC date and time: $(date -u)"
           echo "Attempting to make repository '$REPO_NAME' public using PAT..."
           
-          gh repo edit $REPO_NAME --visibility public
+          gh repo edit $REPO_NAME --visibility public --accept-visibility-change-consequences
           
           echo "Repository '$REPO_NAME' visibility has been set to public."
           echo "SUCCESS! This workflow has completed its one-time task."
